@@ -1,0 +1,14 @@
+# Exclude API keys
+api_keys.pl
+
+# Exclude test directories
+oclc_test
+
+# Exclude lists of search terms
+*.lst
+
+# Exclude files of MARC records and any transient XML/JSON files
+*.mrc
+*.xml
+*.json
+
