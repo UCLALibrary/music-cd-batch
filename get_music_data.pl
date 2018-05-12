@@ -35,9 +35,9 @@ my @search_terms = read_file($upc_file, chomp => 1);
 foreach my $search_term (@search_terms) {
   say "==============================";
   say $search_term;
-  SearchDiscogs($search_term);
-  SearchMusicbrainz($search_term);
   SearchWorldcat($search_term);
+  #SearchDiscogs($search_term);
+  #SearchMusicbrainz($search_term);
   say "";
   sleep 1;
 }
@@ -113,9 +113,13 @@ sub SearchWorldcat {
   # WorldCat API key included above.
 
   # Use WorldCat Standard Number (sn) index
-  my $wc_url = 'http://www.worldcat.org/webservices/catalog/content/sn';
-  $wc_url .= "/$search_term?servicelevel=full&wskey=" . WSKEY;
+  my $wc_url = 'http://www.worldcat.org/webservices/catalog/content/sn/';
+  $wc_url .= "$search_term?servicelevel=full&frbrGrouping=off&wskey=" . WSKEY;
 #say $wc_url;
+# TODO: HACK to test multi-record XML
+###$wc_url = "http://www.worldcat.org/webservices/catalog/search/sru?query=srw.ti=frisbees+and+srw.pl=york&wskey=omquRXhy1nxKQQWeoTjFxEwuHJQmioU0M0kit62O8t41QAL0wNNwYlWrxO8sDA3qTCU21q2siMclOD4r&servicelevel=full&frbrGrouping=off";
+###$wc_url = "http://www.worldcat.org/webservices/catalog/search/sru?query=srw.ti=cupboards+and+srw.pl=durham&wskey=omquRXhy1nxKQQWeoTjFxEwuHJQmioU0M0kit62O8t41QAL0wNNwYlWrxO8sDA3qTCU21q2siMclOD4r&servicelevel=full&frbrGrouping=off";
+
   # Call the API and store the result in XML
   # TODO: Check response for more info?
   my $contents = $browser->get($wc_url)->decoded_content;
@@ -124,22 +128,85 @@ sub SearchWorldcat {
 
   # TODO: Evaluate MARC record(s) and save the best 1 for each search
   # For now, just convert to binary MARC21
-  # API could return multiple records so must iterate over them
+  # API could return multiple records so must iterate over them.
   # MARC library expects to read from filehandles, not variables...
-  
-  open( my $xml_fh, '<', \$contents ) or die "Couldn't open file handle: $! / $^E";
-  # testing
-  open MARC, '>>:utf8', $marc_file;
 
-  say "WorldCat data:";
-  my $batch = MARC::Batch->new( 'XML', $xml_fh );
-  while (my $marc = $batch->next() ){
-    say "Title : ", $marc->subfield(245, "a");
-    say "Artist: ", $marc->subfield(245, "c");
-	say "";
-	print MARC $marc->as_usmarc();
+  ### Having several problems with MARCXML from OCLC when there are multiple records...
+  ### Maybe work around these by grabbing OCLC# directly from XML and fetching records directly?
+  ### <controlfield tag="001">910604789</controlfield>
+  my $pattern = '<controlfield tag="001">([0-9]{1,10})</controlfield>';
+  my @oclc_numbers = ($contents =~ /$pattern/g);
+  foreach my $oclc_number (@oclc_numbers) {
+    say $oclc_number;
+	my $marc = GetMARC($oclc_number);
+	say "Title : ", $marc->subfield('245', 'a');
+	say "Artist: ", $marc->subfield('245', 'c');
+
+	my ($held_by_clu, $number_of_holdings) = GetHoldings($oclc_number);
+	say "Count : ", $number_of_holdings;
+	say "CLU?  : ", $held_by_clu;
+    say "";
   }
-
-  close MARC;
+  
+#  open MARC, '>>:utf8', $marc_file;
+#  print MARC $marc->as_usmarc();
+#  close MARC;
 
 }
+
+##############################
+# Retrieve individual MARCXML record from OCLC and convert to MARC
+sub GetMARC {
+  my $oclc_number = shift;
+  # WorldCat API key included above
+  my $wc_url = 'http://www.worldcat.org/webservices/catalog/content/';
+  $wc_url .= "$oclc_number?servicelevel=full&wskey=" . WSKEY;
+  my $contents = $browser->get($wc_url)->decoded_content;
+  utf8::encode($contents);
+
+  #open( my $xml_fh, '<', \$contents ) or die "Couldn't open file handle: $! / $^E";
+  my $marc = MARC::Record->new_from_xml($contents, 'UTF-8');
+  return $marc;
+}
+
+##############################
+# Evaluate MARC record
+sub EvaluateMARC {
+}
+
+##############################
+# Call OCLC Locations API to get number of holdings and
+# whether CLU (UCLA) holds the record, by OCLC number.
+sub GetHoldings {
+  my $oclc_number = shift;
+  my $held_by_clu = 'NO';
+  my $number_of_holdings = 0;
+
+  # WorldCat API key included above.
+  my $wc_url = 'http://www.worldcat.org/webservices/catalog/content/libraries/';
+  $wc_url .= "$oclc_number?format=json&frbrGrouping=off&servicelevel=full&location=90095&wskey=" . WSKEY;
+
+  my $contents = $browser->get($wc_url)->decoded_content;
+  utf8::encode($contents);
+  # Data in JSON, not XML
+  my $json = decode_json($contents);
+  # Bail out if this OCLC number has no holdings
+  if ($json->{'diagnostics'}) {
+    return ($held_by_clu, $number_of_holdings);
+  }
+
+  $number_of_holdings = $json->{'totalLibCount'};
+  my @libraries = @{$json->{'library'}};
+  foreach my $library (@libraries) {
+#	say $library->{'oclcSymbol'};
+    if ($library->{'oclcSymbol'} eq 'CLU') {
+	  $held_by_clu = 'YES'; # clearer than perl's lack of true/false...
+	  last;
+	};
+  }
+
+  return ($held_by_clu, $number_of_holdings);
+}
+
+
+
