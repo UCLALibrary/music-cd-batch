@@ -117,14 +117,13 @@ sub SearchWorldcat {
   $wc_url .= "$search_term?servicelevel=full&frbrGrouping=off&wskey=" . WSKEY;
 #say $wc_url;
 # TODO: HACK to test multi-record XML
-###$wc_url = "http://www.worldcat.org/webservices/catalog/search/sru?query=srw.ti=frisbees+and+srw.pl=york&wskey=omquRXhy1nxKQQWeoTjFxEwuHJQmioU0M0kit62O8t41QAL0wNNwYlWrxO8sDA3qTCU21q2siMclOD4r&servicelevel=full&frbrGrouping=off";
-###$wc_url = "http://www.worldcat.org/webservices/catalog/search/sru?query=srw.ti=cupboards+and+srw.pl=durham&wskey=omquRXhy1nxKQQWeoTjFxEwuHJQmioU0M0kit62O8t41QAL0wNNwYlWrxO8sDA3qTCU21q2siMclOD4r&servicelevel=full&frbrGrouping=off";
+###$wc_url = "http://www.worldcat.org/webservices/catalog/search/sru?query=srw.ti=frisbees+and+srw.pl=york&wskey=omquRXhy1nxKQQWeoTjFxEwuHJQmioU0M0kit62O8t41QAL0wNNwYlWrxO8sDA3qTCU21q2siMclOD4r&servicelevel=full&frbrGrouping=off&maximumRecords=20";
+###$wc_url = "http://www.worldcat.org/webservices/catalog/search/sru?query=srw.ti=cupboards+and+srw.pl=durham&wskey=omquRXhy1nxKQQWeoTjFxEwuHJQmioU0M0kit62O8t41QAL0wNNwYlWrxO8sDA3qTCU21q2siMclOD4r&servicelevel=full&frbrGrouping=off&maximumRecords=5";
 
   # Call the API and store the result in XML
   # TODO: Check response for more info?
   my $contents = $browser->get($wc_url)->decoded_content;
   utf8::encode($contents);
-#say $contents;
 
   # TODO: Evaluate MARC record(s) and save the best 1 for each search
   # For now, just convert to binary MARC21
@@ -136,17 +135,23 @@ sub SearchWorldcat {
   ### <controlfield tag="001">910604789</controlfield>
   my $pattern = '<controlfield tag="001">([0-9]{1,10})</controlfield>';
   my @oclc_numbers = ($contents =~ /$pattern/g);
-  foreach my $oclc_number (@oclc_numbers) {
-    say $oclc_number;
-	my $marc = GetMARC($oclc_number);
-	say "Title : ", $marc->subfield('245', 'a');
-	say "Artist: ", $marc->subfield('245', 'c');
+  my @marc_records = GetMARC(\@oclc_numbers); # Have to pass reference to array
+  say "Found MARC records: " . scalar(@marc_records);
 
-	my ($held_by_clu, $number_of_holdings) = GetHoldings($oclc_number);
-	say "Count : ", $number_of_holdings;
-	say "CLU?  : ", $held_by_clu;
-    say "";
-  }
+  # Evaluate MARC records, rejecting unsuitable ones, returning the one best remaining one (or none if all get rejected)
+  my $marc_records = EvaluateMARC(\@marc_records);
+
+  #foreach my $oclc_number (@oclc_numbers) {
+  #  say $oclc_number;
+#	my $marc = GetMARC($oclc_number);
+#	say "Title : ", $marc->subfield('245', 'a');
+#	say "Artist: ", $marc->subfield('245', 'c');
+#
+#	my ($held_by_clu, $number_of_holdings) = GetHoldings($oclc_number);
+#	say "Count : ", $number_of_holdings;
+#	say "CLU?  : ", $held_by_clu;
+ #   say "";
+  #}
   
 #  open MARC, '>>:utf8', $marc_file;
 #  print MARC $marc->as_usmarc();
@@ -155,23 +160,73 @@ sub SearchWorldcat {
 }
 
 ##############################
-# Retrieve individual MARCXML record from OCLC and convert to MARC
+# Retrieve MARCXML records(s) from OCLC and convert to MARC
 sub GetMARC {
-  my $oclc_number = shift;
-  # WorldCat API key included above
-  my $wc_url = 'http://www.worldcat.org/webservices/catalog/content/';
-  $wc_url .= "$oclc_number?servicelevel=full&wskey=" . WSKEY;
-  my $contents = $browser->get($wc_url)->decoded_content;
-  utf8::encode($contents);
-
-  #open( my $xml_fh, '<', \$contents ) or die "Couldn't open file handle: $! / $^E";
-  my $marc = MARC::Record->new_from_xml($contents, 'UTF-8');
-  return $marc;
+  my $oclc_numbers = shift; # array reference
+  my @marc_records = (); # empty array, to be filled and returned
+  foreach my $oclc_number (@$oclc_numbers) {
+    say $oclc_number;
+    # WorldCat API key included above
+    my $wc_url = 'http://www.worldcat.org/webservices/catalog/content/';
+    $wc_url .= "$oclc_number?servicelevel=full&wskey=" . WSKEY;
+    my $contents = $browser->get($wc_url)->decoded_content;
+    utf8::encode($contents);
+    my $marc = MARC::Record->new_from_xml($contents, 'UTF-8');
+	push(@marc_records, $marc);
+  }
+  return @marc_records;
 }
 
 ##############################
-# Evaluate MARC record
+# Evaluate MARC records, rejecting unsuitable ones, returning
+# the best remaining one record (or none, if all are rejected).
 sub EvaluateMARC {
+  my $marc_records = shift; # array reference
+  my $best_marc;
+
+  foreach my $marc_record (@$marc_records) {
+    my $oclc_number = $marc_record->field('001')->data();
+	say "Evaluating " . $oclc_number;
+	# Reject completely unsuitable records
+	next if ! RecordIsSuitable($marc_record);
+	# Reject if held by CLU
+	my ($held_by_clu, $number_of_holdings) = GetHoldings($oclc_number);
+	if ($held_by_clu eq 'YES') {
+	  say "REJECTED oclc $oclc_number - held by CLU";
+	  next;
+	}
+  }
+
+  return $best_marc;
+}
+
+##############################
+# Check MARC record for suitability:
+# Evaluate several conditions; record fails if any condition fails.
+# Return 1 (true) if record passes; 0 (false) if not (it is unsuitable).
+sub RecordIsSuitable {
+  my $marc_record = shift;
+  # Assume record will be acceptable
+  my $OK = 1;
+  # TODO: For debugging
+  #say $marc_record->as_formatted();
+  my $oclc_number = $marc_record->field('001')->data();
+
+  # Check 008/23
+  my $fld008 = $marc_record->field('008')->data();
+  if (substr($fld008, 23, 1) eq 'o') {
+    say "REJECTED oclc $oclc_number - bad Form in 008/23";
+	$OK = 0;
+  }
+
+  # Check LDR/06
+  my $ldr = $marc_record->leader();
+  if (substr($ldr, 6, 1) !~ /[ij]/) {
+    say "REJECTED oclc $oclc_number - bad Type in LDR/06";
+	$OK = 0;
+  }
+
+  return $OK;
 }
 
 ##############################
