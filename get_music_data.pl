@@ -18,7 +18,10 @@ use UCLA::Worldcat::WSAPI;
 # Include required API keys
 BEGIN { require './api_keys.pl'; }
 
+# Output from XML and JSON should all be in UTF-8
 binmode STDOUT, ":utf8";
+# Flush STDOUT buffers immediately so we can view output in real time
+STDOUT->autoflush(1);
 
 # 1 required argument: file containing values to search
 if ($#ARGV != 0) {
@@ -40,10 +43,11 @@ foreach my $line (@lines) {
   say "==============================";
   my ($search_term, $accession, $barcode) = split("\t", $line);
   say "Searching for: $search_term";
-  SearchWorldcat($search_term);
-  ###SearchDiscogs($search_term);
-  ###SearchMusicbrainz($search_term);
+  search_worldcat($search_term);
+  search_discogs($search_term);
+  search_musicbrainz($search_term);
   say "";
+  # Discogs and Musicbrainz have rate limits on their APIs
   sleep 1;
 }
 
@@ -53,7 +57,8 @@ exit 0;
 ##############################
 # Searches for UPC or music publisher/issue number
 # using the Discogs API.
-sub SearchDiscogs {
+# Note: Rate limit of 60/minute for authenticated users.
+sub search_discogs {
   my $search_term = shift;
   # Discogs API key included above.
 
@@ -91,7 +96,8 @@ sub SearchDiscogs {
 ##############################
 # Searches for UPC or music publisher/issue number
 # using the MusicBrainz API.
-sub SearchMusicbrainz {
+# Note: Rate limit of 60/minute (on average) per IP address.
+sub search_musicbrainz {
   my $search_term = shift;
   my $mb_url = 'http://musicbrainz.org/ws/2/release/?fmt=json&query=';
   # TODO: Figure out if value is UPC or not, which changes the API call
@@ -114,7 +120,7 @@ sub SearchMusicbrainz {
 # Searches for UPC or music publisher/issue number
 # using the OCLC WorldCat Search API.
 # WorldCat API key included above.
-sub SearchWorldcat {
+sub search_worldcat {
   my $search_term = shift;
   my $oclc = UCLA::Worldcat::WSAPI->new(WSKEY);
 
@@ -124,12 +130,13 @@ sub SearchWorldcat {
   say "Found MARC records: " . scalar(@marc_records);
 
   # Evaluate MARC records, rejecting unsuitable ones, returning the one best remaining one (or none if all get rejected)
-  my $best_record = EvaluateMARC(\@marc_records);
+  my $best_record = evaluate_marc(\@marc_records);
 
   # Proceed, if it's defined
   if ($best_record) {
     say "\tBest record: " . $best_record->oclc_number();
     say "\tTitle : ", $best_record->title();
+	say "";
   }
 
 #  open MARC, '>>:utf8', $marc_file;
@@ -141,12 +148,12 @@ sub SearchWorldcat {
 ##############################
 # Evaluate MARC records, rejecting unsuitable ones, returning
 # the best remaining one record (or none, if all are rejected).
-sub EvaluateMARC {
+sub evaluate_marc {
   my $marc_records = shift; # array reference
   my $best_marc;
 
   # Have to de-reference arrays...
-  @$marc_records = RemoveUnsuitableRecords(\@$marc_records);
+  @$marc_records = remove_unsuitable_records(\@$marc_records);
 
   # How many records are left?
   my $record_count = scalar(@$marc_records);
@@ -163,7 +170,7 @@ sub EvaluateMARC {
   # Iterate over the other records and compare:
   # Winner of [0,1] meets record 2; winner of that meets 3, etc.
   for (my $recnum = 1; $recnum < $record_count; $recnum++) {
-    $best_marc = GetBestRecord($best_marc, @$marc_records[$recnum]);
+    $best_marc = get_best_record($best_marc, @$marc_records[$recnum]);
   }
 
   return $best_marc;
@@ -171,16 +178,15 @@ sub EvaluateMARC {
 
 ##############################
 # Remove unsuitable records from an array, returning just the acceptable ones.
-sub RemoveUnsuitableRecords {
+sub remove_unsuitable_records {
   my $marc_records = shift; # array reference
   my @keep_records = ();
 
   foreach my $marc_record (@$marc_records) {
     my $oclc_number = $marc_record->oclc_number();
-	say "\tEvaluating " . $oclc_number;
 
 	# Reject completely unsuitable records
-	next if ! RecordIsSuitable($marc_record);
+	next if ! record_is_suitable($marc_record);
 
 	# Reject if held by CLU
 	if ($marc_record->held_by_clu()) {
@@ -199,7 +205,7 @@ sub RemoveUnsuitableRecords {
 # Check MARC record for suitability:
 # Evaluate several conditions; record fails if any condition fails.
 # Return 1 (true) if record passes; 0 (false) if not (it is unsuitable).
-sub RecordIsSuitable {
+sub record_is_suitable {
   my $marc_record = shift;
   # Assume record will be acceptable
   my $OK = 1;
@@ -226,11 +232,11 @@ sub RecordIsSuitable {
 ##############################
 # Compare two MARC records and return the "best" one.
 # Criteria: 040 $b, encoding level, number of holdings.
-sub GetBestRecord {
+sub get_best_record {
   my ($record1, $record2) = @_;
   my $oclc_number1 = $record1->oclc_number();
   my $oclc_number2 = $record2->oclc_number();
-  say "\tComparing $oclc_number1 and $oclc_number2...";
+  say "\tComparing OCLC $oclc_number1 and $oclc_number2...";
 
   my $score1 = 0;
   my $score2 = 0;
