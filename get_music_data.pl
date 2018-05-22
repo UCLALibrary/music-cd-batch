@@ -43,6 +43,7 @@ foreach my $line (@lines) {
   say "==============================";
   my ($search_term, $accession, $barcode) = split("\t", $line);
   say "Searching for: $search_term";
+  # TODO: If no records in worldcat, feed music pub number from discogs/musicbrainz into worldcat and try again?
   search_worldcat($search_term);
   search_discogs($search_term);
   search_musicbrainz($search_term);
@@ -67,30 +68,28 @@ sub search_discogs {
   $discogs_url .= "?q=$search_term&token=" . DISCOGS_TOKEN;
 
   # Call the API and store the result in JSON
-  # TODO: Check response for more info?
   my $contents = $browser->get($discogs_url)->decoded_content;
   my $json = decode_json($contents);
 
-  my $release = $json->{'results'}->[0];
-
-  say "Discogs data:";
-  #say "Title : ", $release->{'title'} if $release;
-
-  # Experiment: Get first resource_url for release, then use that to get better
-  # artist and title info?
-  # Might have to cycle through releases to get one which is not a master.
-  my $resource_url = $release->{'resource_url'} if $release;
-  if ($resource_url) {
-    $resource_url .= '?token=' . DISCOGS_TOKEN;
-	#say $resource_url;
-	$contents = $browser->get($resource_url)->decoded_content;
-	$json = decode_json($contents);
-
-	say "\tTitle : ", $json->{'title'};
-	say "\tArtist: ", $json->{'artists_sort'};
-	say "";
+  # Search API gives minimal info.
+  # Call first "releases" resource_url from initial data 
+  # to get detailed data.
+  if ($json) {
+    foreach my $result (@{$json->{'results'}}) {
+	  my $resource_url = $result->{'resource_url'};
+	  if ($resource_url =~ /releases/) {
+	    $resource_url .= '?token=' . DISCOGS_TOKEN;
+		$contents = $browser->get($resource_url)->decoded_content;
+		my $release_json = decode_json($contents);
+        say "Discogs data:";
+	    say "\tTitle : ", $release_json->{'title'};
+	    say "\tArtist: ", $release_json->{'artists_sort'};
+	    say "\tTry   : ", $release_json->{'labels'}->[0]->{'catno'};
+	    say "";
+		last; # Only check the first matching resource_url
+	  }
+	}
   }
-
 }
 
 ##############################
@@ -108,12 +107,16 @@ sub search_musicbrainz {
   my $contents = $browser->get($mb_url)->decoded_content;
   my $json = decode_json($contents);
 
-  my $release = $json->{'releases'}->[0];
-  say "MusicBrainz data:";
-  #say "UPC   : ", $release->{'barcode'};
-  say "\tTitle : ", $release->{'title'} if $release;
-  say "\tArtist: ", $release->{'artist-credit'}->[0]->{'artist'}->{'name'} if $release;
-  say "";
+  if ($json) {
+    my $release = $json->{'releases'}->[0];
+	if ($release) {
+      say "MusicBrainz data:";
+      say "\tTitle : ", $release->{'title'};
+      say "\tArtist: ", $release->{'artist-credit'}->[0]->{'artist'}->{'name'};
+      say "\tTry   : ", $release->{'label-info'}->[0]->{'catalog-number'};
+      say "";
+	}
+  }
 }
 
 ##############################
@@ -137,12 +140,12 @@ sub search_worldcat {
     say "\tBest record: " . $best_record->oclc_number();
     say "\tTitle : ", $best_record->title();
 	say "";
+
+	# Save the record as binary MARC
+    open MARC, '>>:utf8', $marc_file;
+    print MARC $best_record->as_usmarc();
+    close MARC;
   }
-
-#  open MARC, '>>:utf8', $marc_file;
-#  print MARC $marc->as_usmarc();
-#  close MARC;
-
 }
 
 ##############################
