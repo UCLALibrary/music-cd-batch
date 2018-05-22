@@ -118,9 +118,9 @@ sub SearchWorldcat {
   my $search_term = shift;
   my $oclc = UCLA::Worldcat::WSAPI->new(WSKEY);
 
-  ###my @marc_records = $oclc->search_sru_sn($search_term);
-  ###TESTING
-  my @marc_records = $oclc->search_sru('all scratched up'); 
+  my @marc_records = $oclc->search_sru_sn($search_term);
+###TESTING
+###my @marc_records = $oclc->search_sru('all scratched up'); 
   say "Found MARC records: " . scalar(@marc_records);
 
   # Evaluate MARC records, rejecting unsuitable ones, returning the one best remaining one (or none if all get rejected)
@@ -241,8 +241,15 @@ sub GetBestRecord {
   my $lang2 = $record2->field('040')->subfield('b');
   $score1 += score_040b($lang1);
   $score2 += score_040b($lang2);
+  if ($score1 > $score2) {
+    say "\tLanguage: * $lang1 > $lang2";
+  } elsif ($score2 > $score1) {
+    say "\tLanguage: $lang1 < $lang2 *";
+  } else {
+    say "\tLanguage: $lang1 = $lang2";
+  }
 
-  say "DEBUG: $score1 **** $score2";
+#say "DEBUG: Round 1: $score1 **** $score2";
 
   # Second: Compare encoding levels: (best to worst): Blank, 4, I, 1, 7, K, M, L, 3
   # Use instr to compare; lowest index (including -1 for not found) is worst.
@@ -252,21 +259,37 @@ sub GetBestRecord {
   my $elvl2 = $record2->encoding_level();
   if (index($elvl_values, $elvl1) > index($elvl_values, $elvl2)) {
     $score1 += 5;
-	say "\tEncoding level $elvl1 beats $elvl2";
+	say "\tEncoding: * $elvl1 > $elvl2";
   } elsif (index($elvl_values, $elvl2) > index($elvl_values, $elvl1)) {
     $score2 += 5;
-	say "\tEncoding level $elvl1 loses to $elvl2";
+	say "\tEncoding: $elvl1 < $elvl2 *";
   } else {
-    say "\tEncoding levels are both $elvl1";
+    say "\tEncoding: $elvl1 = $elvl2";
   }
 
-  say "DEBUG: $score1 **** $score2";
+#say "DEBUG: Round 2: $score1 **** $score2";
 
+  # Third: Compare number of holdings attached to each record.
+  my $hcount1 = $record1->holdings_count();
+  my $hcount2 = $record2->holdings_count();
+  if ($hcount1 > $hcount2) {
+    $score1 += 1;
+	say "\tHoldings: * $hcount1 > $hcount2";
+  } elsif ($hcount2 > $hcount1) {
+	$score2 += 1;
+	say "\tHoldings: $hcount1 < $hcount2 *";
+  } else {
+    say "\tHoldings: $hcount1 = $hcount2";
+  }
+  
+#say "DEBUG: Round 3: $score1 **** $score2";
 
   # Return the record with best score, or record 1 if scores are equal
   if ($score1 >= $score2) {
+    say "\t$oclc_number1 beats $oclc_number2";
     return $record1;
   } else {
+    say "\t$oclc_number2 beats $oclc_number1";
     return $record2;
   }
 }
@@ -282,11 +305,9 @@ sub score_040b {
   } elsif ($lang ne 'eng') {
     # Explicitly non-english, which is worst
     $score = 0;
-	say "\t040 \$b = $lang";
   } else {
     # Default case, must be eng, which is best
 	$score = 10;
-	say "\t040 \$b = $lang";
   }
   return $score;
 }
