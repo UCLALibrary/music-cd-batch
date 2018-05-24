@@ -3,6 +3,7 @@
 use Data::Dumper qw(Dumper);
 use File::Slurp qw(read_file);
 use JSON qw(decode_json);
+#use List::MoreUtils qw(uniq);
 use LWP::UserAgent;
 use MARC::File::XML (BinaryEncoding => 'utf8', RecordFormat => 'MARC21');
 use MARC::Batch;
@@ -43,14 +44,25 @@ foreach my $line (@lines) {
   say "==============================";
   my ($search_term, $accession, $barcode) = split("\t", $line);
   say "Searching for: $search_term";
-  # TODO: If no records in worldcat, feed music pub number from discogs/musicbrainz into worldcat and try again?
-  search_worldcat($search_term);
-  search_discogs($search_term);
-  search_musicbrainz($search_term);
+
+  # First, search Discogs and MusicBrainz for the given term.
+  # Among other data, collect music publisher number(s) from those sources.
+  my %discogs_data = search_discogs($search_term);
+  my %mb_data = search_musicbrainz($search_term);
+
+  # Store original search term plus unique pub numbers - if any - and search all of those in WorldCat.
+  # Use hash for automatic uniqueness; values all are 1, we only care about the unique keys.
+  my %search_terms = ($search_term => 1);
+  $search_terms{$discogs_data{'pub_num'}} = 1 if %discogs_data;
+  $search_terms{$mb_data{'pub_num'}} = 1 if %mb_data;
+#say Dumper(%search_terms);
+  
+  search_worldcat(\%search_terms);
   say "";
   # Discogs and Musicbrainz have rate limits on their APIs
   sleep 1;
 }
+say "=== END OF LOG ===";
 
 # End of main script, see subroutines below
 exit 0;
@@ -61,6 +73,9 @@ exit 0;
 # Note: Rate limit of 60/minute for authenticated users.
 sub search_discogs {
   my $search_term = shift;
+  # Data to be returned to caller for later use.
+  my %discogs_data;
+
   # Discogs API key included above.
 
   my $discogs_url = 'https://api.discogs.com/database/search';
@@ -81,15 +96,22 @@ sub search_discogs {
 	    $resource_url .= '?token=' . DISCOGS_TOKEN;
 		$contents = $browser->get($resource_url)->decoded_content;
 		my $release_json = decode_json($contents);
+		my $title = $release_json->{'title'};
+		my $artist = $release_json->{'artists_sort'};
+		my $pub_num = $release_json->{'labels'}->[0]->{'catno'};
+		# Discogs sends literal 'none' for pub_num if no data; remove that
+		$pub_num = '' if $pub_num eq 'none';
+
         say "Discogs data:";
-	    say "\tTitle : ", $release_json->{'title'};
-	    say "\tArtist: ", $release_json->{'artists_sort'};
-	    say "\tTry   : ", $release_json->{'labels'}->[0]->{'catno'};
+	    say "\tTitle : $title / $artist";
+	    say "\tPubnum: $pub_num";
 	    say "";
+		%discogs_data = ('title' => $title, 'artist' => $artist, 'pub_num' => $pub_num);
 		last; # Only check the first matching resource_url
 	  }
 	}
   }
+  return %discogs_data;
 }
 
 ##############################
@@ -98,6 +120,8 @@ sub search_discogs {
 # Note: Rate limit of 60/minute (on average) per IP address.
 sub search_musicbrainz {
   my $search_term = shift;
+  # Data to be returned to caller for later use.
+  my %mb_data;
   my $mb_url = 'http://musicbrainz.org/ws/2/release/?fmt=json&query=';
   # TODO: Figure out if value is UPC or not, which changes the API call
   $mb_url .= 'barcode:' . $search_term;
@@ -110,13 +134,17 @@ sub search_musicbrainz {
   if ($json) {
     my $release = $json->{'releases'}->[0];
 	if ($release) {
+	  my $title = $release->{'title'};
+	  my $artist = $release->{'artist-credit'}->[0]->{'artist'}->{'name'};
+	  my $pub_num = $release->{'label-info'}->[0]->{'catalog-number'};
       say "MusicBrainz data:";
-      say "\tTitle : ", $release->{'title'};
-      say "\tArtist: ", $release->{'artist-credit'}->[0]->{'artist'}->{'name'};
-      say "\tTry   : ", $release->{'label-info'}->[0]->{'catalog-number'};
+      say "\tTitle : $title / $artist";
+      say "\tPubnum: $pub_num";
       say "";
+	  %mb_data = ('title' => $title, 'artist' => $artist, 'pub_num' => $pub_num);
 	}
   }
+  return %mb_data;
 }
 
 ##############################
@@ -124,12 +152,17 @@ sub search_musicbrainz {
 # using the OCLC WorldCat Search API.
 # WorldCat API key included above.
 sub search_worldcat {
-  my $search_term = shift;
+  #my $search_term = shift;
+  my %search_terms = %{$_[0]};
+  my @marc_records;
+
   my $oclc = UCLA::Worldcat::WSAPI->new(WSKEY);
 
-  my @marc_records = $oclc->search_sru_sn($search_term);
-###TESTING
-###my @marc_records = $oclc->search_sru('all scratched up'); 
+  foreach my $search_term (keys %search_terms) {
+    push @marc_records, $oclc->search_sru_sn($search_term);
+  }
+
+  #my @marc_records = $oclc->search_sru_sn($search_term);
   say "Found MARC records: " . scalar(@marc_records);
 
   # Evaluate MARC records, rejecting unsuitable ones, returning the one best remaining one (or none if all get rejected)
@@ -255,6 +288,7 @@ sub get_best_record {
   } elsif ($score2 > $score1) {
     say "\tLanguage: $lang1 < $lang2 *";
   } else {
+	# Langs may not be the same, but both score equivalently - good enough
     say "\tLanguage: $lang1 = $lang2";
   }
 
@@ -301,6 +335,7 @@ sub get_best_record {
     say "\t$oclc_number2 beats $oclc_number1";
     return $record2;
   }
+  say "";
 }
 
 ##############################
