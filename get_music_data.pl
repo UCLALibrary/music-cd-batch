@@ -3,7 +3,6 @@
 use Data::Dumper qw(Dumper);
 use File::Slurp qw(read_file);
 use JSON qw(decode_json);
-#use List::MoreUtils qw(uniq);
 use LWP::UserAgent;
 use MARC::File::XML (BinaryEncoding => 'utf8', RecordFormat => 'MARC21');
 use MARC::Batch;
@@ -52,12 +51,15 @@ foreach my $line (@lines) {
 
   # Store original search term plus unique pub numbers - if any - and search all of those in WorldCat.
   # Use hash for automatic uniqueness; values all are 1, we only care about the unique keys.
+  # TODO: Consider just using an array from the start, and de-duping before doing the search.
   my %search_terms = ($search_term => 1);
   $search_terms{$discogs_data{'pub_num'}} = 1 if %discogs_data;
   $search_terms{$mb_data{'pub_num'}} = 1 if %mb_data;
-#say Dumper(%search_terms);
+
+  my @search_terms = (keys %search_terms);
+###say Dumper(@search_terms);
   
-  search_worldcat(\%search_terms);
+  search_worldcat(\@search_terms);
   say "";
   # Discogs and Musicbrainz have rate limits on their APIs
   sleep 1;
@@ -137,6 +139,7 @@ sub search_musicbrainz {
 	  my $title = $release->{'title'};
 	  my $artist = $release->{'artist-credit'}->[0]->{'artist'}->{'name'};
 	  my $pub_num = $release->{'label-info'}->[0]->{'catalog-number'};
+	  $pub_num = '' if ! $pub_num;
       say "MusicBrainz data:";
       say "\tTitle : $title / $artist";
       say "\tPubnum: $pub_num";
@@ -152,17 +155,10 @@ sub search_musicbrainz {
 # using the OCLC WorldCat Search API.
 # WorldCat API key included above.
 sub search_worldcat {
-  #my $search_term = shift;
-  my %search_terms = %{$_[0]};
-  my @marc_records;
-
+  my $search_terms_ref = shift;
   my $oclc = UCLA::Worldcat::WSAPI->new(WSKEY);
 
-  foreach my $search_term (keys %search_terms) {
-    push @marc_records, $oclc->search_sru_sn($search_term);
-  }
-
-  #my @marc_records = $oclc->search_sru_sn($search_term);
+  my @marc_records = $oclc->search_sru_sn($search_terms_ref);
   say "Found MARC records: " . scalar(@marc_records);
 
   # Evaluate MARC records, rejecting unsuitable ones, returning the one best remaining one (or none if all get rejected)
