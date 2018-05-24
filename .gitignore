@@ -12,3 +12,6 @@ oclc_test
 *.xml
 *.json
 
+# Exclude logs and other output
+*.log
+*.out
