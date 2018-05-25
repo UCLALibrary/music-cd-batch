@@ -49,17 +49,23 @@ foreach my $line (@lines) {
   my %discogs_data = search_discogs($search_term);
   my %mb_data = search_musicbrainz($search_term);
 
-  # Store original search term plus unique pub numbers - if any - and search all of those in WorldCat.
-  # Use hash for automatic uniqueness; values all are 1, we only care about the unique keys.
-  # TODO: Consider just using an array from the start, and de-duping before doing the search.
-  my %search_terms = ($search_term => 1);
-  $search_terms{$discogs_data{'pub_num'}} = 1 if %discogs_data;
-  $search_terms{$mb_data{'pub_num'}} = 1 if %mb_data;
-
-  my @search_terms = (keys %search_terms);
+  my $marc_record = search_worldcat($search_term);
+  # If initial search on UPC didn't find anything, try searching for
+  # the music publisher numbers from Discogs/MusicBrainz.
+  if (! $marc_record) {
+    # Use hash for automatic uniqueness; values all are 1, we only care about the unique keys.
+    my %search_terms;
+    $search_terms{$discogs_data{'pub_num'}} = 1 if $discogs_data{'pub_num'};
+    $search_terms{$mb_data{'pub_num'}} = 1 if %mb_data;
+	# Convert the hash to an array
+    my @search_terms = (keys %search_terms);
 ###say Dumper(@search_terms);
-  
-  search_worldcat(\@search_terms);
+	if (@search_terms) {
+	  say "Searching WorldCat again for music publisher numbers... ", join(", ", @search_terms);
+      $marc_record = search_worldcat(\@search_terms);
+	}
+  }
+
   say "";
   # Discogs and Musicbrainz have rate limits on their APIs
   sleep 1;
@@ -101,14 +107,17 @@ sub search_discogs {
 		my $title = $release_json->{'title'};
 		my $artist = $release_json->{'artists_sort'};
 		my $pub_num = $release_json->{'labels'}->[0]->{'catno'};
+		$pub_num = normalize_pub_num($pub_num) if $pub_num;
 		# Discogs sends literal 'none' for pub_num if no data; remove that
-		$pub_num = '' if $pub_num eq 'none';
+		undef $pub_num if $pub_num eq 'none';
 
         say "Discogs data:";
 	    say "\tTitle : $title / $artist";
-	    say "\tPubnum: $pub_num";
+	    say "\tPubnum: $pub_num" if $pub_num;
 	    say "";
-		%discogs_data = ('title' => $title, 'artist' => $artist, 'pub_num' => $pub_num);
+		$discogs_data{'title'} = $title if $title;
+		$discogs_data{'artist'} = $artist if $artist;
+		$discogs_data{'pub_num'} = $pub_num if $pub_num;
 		last; # Only check the first matching resource_url
 	  }
 	}
@@ -139,6 +148,7 @@ sub search_musicbrainz {
 	  my $title = $release->{'title'};
 	  my $artist = $release->{'artist-credit'}->[0]->{'artist'}->{'name'};
 	  my $pub_num = $release->{'label-info'}->[0]->{'catalog-number'};
+      $pub_num = normalize_pub_num($pub_num) if $pub_num;
 	  $pub_num = '' if ! $pub_num;
       say "MusicBrainz data:";
       say "\tTitle : $title / $artist";
@@ -175,6 +185,9 @@ sub search_worldcat {
     print MARC $best_record->as_usmarc();
     close MARC;
   }
+
+  # TODO: Decide what you're really returning from here......
+  return $best_record;
 }
 
 ##############################
@@ -246,6 +259,7 @@ sub record_is_suitable {
   my $oclc_number = $marc_record->oclc_number();
 
   # Check 008/23 (form of item)
+  # All OCLC records have 008 - ?
   my $fld008 = $marc_record->field('008')->data();
   if (substr($fld008, 23, 1) eq 'o') {
     say "\tREJECTED oclc $oclc_number - bad Form in 008/23";
@@ -254,9 +268,22 @@ sub record_is_suitable {
 
   # Check LDR/06 (record type)
   if ($marc_record->record_type() !~ /[ij]/) {
-    say "\tREJECTED oclc $oclc_number - bad Type in LDR/06";
+    say "\tREJECTED oclc $oclc_number - bad Type in LDR/06 " . $marc_record->record_type();
 	$OK = 0;
   }
+  
+  # Check 007/03 (speed, for sound recordings)
+  # CDs should have 007/03 = f (1.4 m/sec)... TODO? but some have z (unknown), allow that too.
+  # However, allow records which lack 007 completely as not always coded.
+  my $fld007 = $marc_record->field('007');
+  if ($fld007) {
+    my $speed = substr($fld007->data(), 3, 1);
+	if ($speed !~ /[f]/) {
+      say "\tREJECTED oclc $oclc_number - bad Speed in 007/03: $speed";
+	  $OK = 0;
+	}
+  }
+
 
   return $OK;
 }
@@ -351,4 +378,14 @@ sub score_040b {
   }
   return $score;
 }
+
+##############################
+# Normalize music publisher number by 
+# removing space and hyphen.
+sub normalize_pub_num {
+  my $pub_num = shift;
+  $pub_num =~ s/[ -]//g;
+  return $pub_num;
+}
+
 
