@@ -66,6 +66,9 @@ foreach my $line (@lines) {
 	}
   }
 
+  # Print artists & titles for comparison
+  say "\tDC Title: " . $discogs_data{'title'} . " / " . $discogs_data{'artist'} if %discogs_data;;
+  say "\tMB Title: " . $mb_data{'title'} . " / " . $mb_data{'artist'} if %mb_data;
   say "";
   # Discogs and Musicbrainz have rate limits on their APIs
   sleep 1;
@@ -111,10 +114,10 @@ sub search_discogs {
 		# Discogs sends literal 'none' for pub_num if no data; remove that
 		undef $pub_num if $pub_num eq 'none';
 
-        say "Discogs data:";
-	    say "\tTitle : $title / $artist";
-	    say "\tPubnum: $pub_num" if $pub_num;
-	    say "";
+        #say "Discogs data:";
+	    #say "\tTitle : $title / $artist";
+	    say "\tDC Pubnum: $pub_num" if $pub_num;
+	    #say "";
 		$discogs_data{'title'} = $title if $title;
 		$discogs_data{'artist'} = $artist if $artist;
 		$discogs_data{'pub_num'} = $pub_num if $pub_num;
@@ -150,10 +153,10 @@ sub search_musicbrainz {
 	  my $pub_num = $release->{'label-info'}->[0]->{'catalog-number'};
       $pub_num = normalize_pub_num($pub_num) if $pub_num;
 	  $pub_num = '' if ! $pub_num;
-      say "MusicBrainz data:";
-      say "\tTitle : $title / $artist";
-      say "\tPubnum: $pub_num";
-      say "";
+      #say "MusicBrainz data:";
+      #say "\tTitle : $title / $artist";
+      say "\tMB Pubnum: $pub_num";
+      #say "";
 	  %mb_data = ('title' => $title, 'artist' => $artist, 'pub_num' => $pub_num);
 	}
   }
@@ -172,13 +175,14 @@ sub search_worldcat {
   say "Found MARC records: " . scalar(@marc_records);
 
   # Evaluate MARC records, rejecting unsuitable ones, returning the one best remaining one (or none if all get rejected)
-  my $best_record = evaluate_marc(\@marc_records);
+  my $best_record = evaluate_marc(\@marc_records) if @marc_records;
 
   # Proceed, if it's defined
   if ($best_record) {
-    say "\tBest record: " . $best_record->oclc_number();
-    say "\tTitle : ", $best_record->title();
 	say "";
+    say "\tBest record: " . $best_record->oclc_number();
+    say "\tWC Title: ", $best_record->title();
+	#say "";
 
 	# Save the record as binary MARC
     open MARC, '>>:utf8', $marc_file;
@@ -275,15 +279,27 @@ sub record_is_suitable {
   # Check 007/03 (speed, for sound recordings)
   # CDs should have 007/03 = f (1.4 m/sec)... TODO? but some have z (unknown), allow that too.
   # However, allow records which lack 007 completely as not always coded.
-  my $fld007 = $marc_record->field('007');
-  if ($fld007) {
-    my $speed = substr($fld007->data(), 3, 1);
-	if ($speed !~ /[f]/) {
-      say "\tREJECTED oclc $oclc_number - bad Speed in 007/03: $speed";
-	  $OK = 0;
-	}
-  }
+  # TODO: Move this check to warnings, for accepted records?
+  # Not reliable enough to exclude records.
+  #my $fld007 = $marc_record->field('007');
+  #if ($fld007) {
+  #  my $speed = substr($fld007->data(), 3, 1);
+	#if ($speed !~ /[f]/) {
+    #  say "\tREJECTED oclc $oclc_number - bad Speed in 007/03: $speed";
+	#  $OK = 0;
+	#}
+  #}
 
+  # TODO: Experiment: Check 007/06 (dimensions, for sound recordings)
+  # CDs should have 007/06 = g (4 3/4 in)
+  #my $fld007 = $marc_record->field('007');
+  #if ($fld007) {
+  #  my $dimension = substr($fld007->data(), 6, 1);
+#	if ($dimension !~ /[g]/) {
+#      say "\tREJECTED oclc $oclc_number - bad Dimension in 007/06: $dimension";
+#	  $OK = 0;
+#	}
+#  }
 
   return $OK;
 }
