@@ -71,13 +71,17 @@ foreach my $line (@lines) {
 	say "";
     say "\tBest record: " . $marc_record->oclc_number();
 	report_marc_problems($marc_record);
-	say "";
-    say "\tWC Title: ", $marc_record->title();
+	$marc_record = add_local_fields($marc_record, $accession, $barcode);
 
 	# Save the record as binary MARC
     open MARC, '>>:utf8', $marc_file;
     print MARC $marc_record->as_usmarc();
     close MARC;
+
+	# Output for title review
+	say "";
+    say "\tWC Title: ", $marc_record->title();
+
   } else {
     # TODO: Create basic MARC record from DC/MB data?
   }
@@ -326,12 +330,12 @@ sub get_best_record {
   $score1 += score_040b($lang1);
   $score2 += score_040b($lang2);
   if ($score1 > $score2) {
-    say "\tLanguage: * $lang1 > $lang2";
+    say "\t\tLanguage: * $lang1 > $lang2";
   } elsif ($score2 > $score1) {
-    say "\tLanguage: $lang1 < $lang2 *";
+    say "\t\tLanguage: $lang1 < $lang2 *";
   } else {
 	# Langs may not be the same, but both score equivalently - good enough
-    say "\tLanguage: $lang1 = $lang2";
+    say "\t\tLanguage: $lang1 = $lang2";
   }
 
 #say "DEBUG: Round 1: $score1 **** $score2";
@@ -344,12 +348,12 @@ sub get_best_record {
   my $elvl2 = $record2->encoding_level();
   if (index($elvl_values, $elvl1) > index($elvl_values, $elvl2)) {
     $score1 += 5;
-	say "\tEncoding: * $elvl1 > $elvl2";
+	say "\t\tEncoding: * $elvl1 > $elvl2";
   } elsif (index($elvl_values, $elvl2) > index($elvl_values, $elvl1)) {
     $score2 += 5;
-	say "\tEncoding: $elvl1 < $elvl2 *";
+	say "\t\tEncoding: $elvl1 < $elvl2 *";
   } else {
-    say "\tEncoding: $elvl1 = $elvl2";
+    say "\t\tEncoding: $elvl1 = $elvl2";
   }
 
 #say "DEBUG: Round 2: $score1 **** $score2";
@@ -359,22 +363,22 @@ sub get_best_record {
   my $hcount2 = $record2->holdings_count();
   if ($hcount1 > $hcount2) {
     $score1 += 1;
-	say "\tHoldings: * $hcount1 > $hcount2";
+	say "\t\tHoldings: * $hcount1 > $hcount2";
   } elsif ($hcount2 > $hcount1) {
 	$score2 += 1;
-	say "\tHoldings: $hcount1 < $hcount2 *";
+	say "\t\tHoldings: $hcount1 < $hcount2 *";
   } else {
-    say "\tHoldings: $hcount1 = $hcount2";
+    say "\t\tHoldings: $hcount1 = $hcount2";
   }
   
 #say "DEBUG: Round 3: $score1 **** $score2";
 
   # Return the record with best score, or record 1 if scores are equal
   if ($score1 >= $score2) {
-    say "\t$oclc_number1 beats $oclc_number2";
+    say "\t\t$oclc_number1 beats $oclc_number2";
     return $record1;
   } else {
-    say "\t$oclc_number2 beats $oclc_number1";
+    say "\t\t$oclc_number2 beats $oclc_number1";
     return $record2;
   }
   say "";
@@ -450,8 +454,6 @@ sub report_marc_problems {
     $sfd = $fld->subfield('v');
     say "\t\tWARNING: 490 \$v = $sfd" if $sfd;
   }
-  
-
 
 }
 
@@ -471,8 +473,52 @@ sub has_field {
   return $has_it;
 }
 
+##############################
+# Add local fields to MARC record to prepare
+# for load into Voyager.
+sub add_local_fields {
+  my ($marc_record, $accession, $barcode) = @_;
+
+  # Add 099 field with accession number: 099 ## $a $accession
+  my $fld099 = MARC::Field->new('099', ' ', ' ', 'a' => $accession);
+  $marc_record->insert_fields_ordered($fld099);
+
+  # Add 049 field: 049 ## $a CLUV $o muclsdsdr $p {SPAC} $l {barcode} 
+  my $fld049 = MARC::Field->new('049', ' ', ' ', 
+    'a' => 'CLUV',
+	'o' => 'muclsdsdr',
+	'p' => 'MEHER',
+	'l' => $barcode
+  );
+  $marc_record->insert_fields_ordered($fld049);
+
+  # Add 910 field: 910 ## $a {initials TBD} {date processed in YYMMDD format}
+  my $fld910 = MARC::Field->new('910', ' ', ' ', 'a' => 'TBD ' . get_yymmdd());
+  $marc_record->insert_fields_ordered($fld910);
+
+  # Add 948 field?
+
+  return $marc_record;
+
+}
 
 ##############################
-##############################
+# Get today in YYMMDD format
+sub get_yymmdd {
+  my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+  $year-=100; # add 1900, subtract 2000, to get current 2-digit year for 2000-2099
+  if ( $year <= 9 ) {
+    $year = "0".$year;
+  }
+  $mon+=1;    # localtime gives $mon as 0..11
+  if ( $mon <= 9 ) {
+    $mon = "0".$mon;
+  }
+  if ( $mday <= 9 ) {
+    $mday = "0".$mday;
+  }
+  return $year.$mon.$mday;
+}
+
 ##############################
 ##############################
