@@ -66,6 +66,22 @@ foreach my $line (@lines) {
 	}
   }
 
+  # If there's a MARC record now, use it
+  if ($marc_record) {
+	say "";
+    say "\tBest record: " . $marc_record->oclc_number();
+	report_marc_problems($marc_record);
+	say "";
+    say "\tWC Title: ", $marc_record->title();
+
+	# Save the record as binary MARC
+    open MARC, '>>:utf8', $marc_file;
+    print MARC $marc_record->as_usmarc();
+    close MARC;
+  } else {
+    # TODO: Create basic MARC record from DC/MB data?
+  }
+
   # Print artists & titles for comparison
   say "\tDC Title: " . $discogs_data{'title'} . " / " . $discogs_data{'artist'} if %discogs_data;;
   say "\tMB Title: " . $mb_data{'title'} . " / " . $mb_data{'artist'} if %mb_data;
@@ -176,19 +192,6 @@ sub search_worldcat {
 
   # Evaluate MARC records, rejecting unsuitable ones, returning the one best remaining one (or none if all get rejected)
   my $best_record = evaluate_marc(\@marc_records) if @marc_records;
-
-  # Proceed, if it's defined
-  if ($best_record) {
-	say "";
-    say "\tBest record: " . $best_record->oclc_number();
-    say "\tWC Title: ", $best_record->title();
-	#say "";
-
-	# Save the record as binary MARC
-    open MARC, '>>:utf8', $marc_file;
-    print MARC $best_record->as_usmarc();
-    close MARC;
-  }
 
   # TODO: Decide what you're really returning from here......
   return $best_record;
@@ -405,3 +408,71 @@ sub normalize_pub_num {
 }
 
 
+##############################
+# Report problems with MARC record we're keeping,
+# for later review / cleanup.
+sub report_marc_problems {
+  my $marc_record = shift;
+  my $fld;
+  my $sfd;
+
+  # 040 $b exists, but is not eng; both are not repeatable
+  $fld = $marc_record->field('040');
+  if ($fld) {
+    $sfd = $fld->subfield('b');
+	if ($sfd && $sfd ne 'eng') {
+      say "\t\tWARNING: 040 \$b = $sfd";
+	}
+  }
+
+  # No 007 and/or 300 and/or 650
+  say "\t\tWARNING: No 007 field" if not has_field($marc_record, qw(007));
+  say "\t\tWARNING: No 300 field" if not has_field($marc_record, qw(300));
+  say "\t\tWARNING: No 650 field" if not has_field($marc_record, qw(650));
+
+  # None of 100/110/700/710 name fields
+  say "\t\tWARNING: No 100/110/700/710 fields" if not has_field($marc_record, qw(100 110 700 710));
+
+  # None of 260/264 publisher fields
+  say "\t\tWARNING: No 260/264 fields" if not has_field($marc_record, qw(260 264));
+
+  # None of 500/505/511/518 note fields
+  say "\t\tWARNING: No 500/505/511/518 fields" if not has_field($marc_record, qw(500 505 511 518));
+
+  # 245 $n or 490 $v exists, meaning it's probably a multi-CD set
+  $fld = $marc_record->field('245');
+  if ($fld) {
+    $sfd = $fld->subfield('n');
+    say "\t\tWARNING: 245 \$n = $sfd" if $sfd;
+  }
+  $fld = $marc_record->field('490');
+  if ($fld) {
+    $sfd = $fld->subfield('v');
+    say "\t\tWARNING: 490 \$v = $sfd" if $sfd;
+  }
+  
+
+
+}
+
+##############################
+# Test whether MARC record has any of the given fields
+# in the @fields parameter.
+sub has_field {
+  my $marc_record = shift;
+  my @fields = @_;
+  my $has_it = 0; # false until we find it
+  foreach my $fld (@fields) {
+    $has_it = $marc_record->field($fld);
+	# Return early if found any field
+	return $has_it if $has_it;
+  }
+  # Made it to the end, return default value of false
+  return $has_it;
+}
+
+
+##############################
+##############################
+##############################
+##############################
