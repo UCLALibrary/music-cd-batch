@@ -492,11 +492,19 @@ sub add_local_fields {
   );
   $marc_record->insert_fields_ordered($fld049);
 
-  # Add 910 field: 910 ## $a {initials TBD} {date processed in YYMMDD format}
-  my $fld910 = MARC::Field->new('910', ' ', ' ', 'a' => 'TBD ' . get_yymmdd());
+  # Add 910 field: 910 ## $a meherbatch {date processed in YYMMDD format}
+  my $fld910 = MARC::Field->new('910', ' ', ' ', 'a' => 'meherbatch ' . get_yymmdd());
   $marc_record->insert_fields_ordered($fld910);
 
-  # Add 948 field?
+  # Add 948 field: 948 ## $a cmc $b meherbatch $c [yyyymmdd] $d 1 
+  # Note date in $c is yyyymmdd; prepend 20, won't care by 2100....
+  my $fld948 = MARC::Field->new('948', ' ', ' ',
+    'a' => 'cmc',
+	'b' => 'meherbatch',
+	'c' => '20' . get_yymmdd(),
+	'd' => '1'
+  );
+  $marc_record->insert_fields_ordered($fld948);
 
   return $marc_record;
 
