@@ -479,10 +479,6 @@ sub has_field {
 sub add_local_fields {
   my ($marc_record, $accession, $barcode) = @_;
 
-  # Add 099 field with accession number: 099 ## $a $accession
-  my $fld099 = MARC::Field->new('099', ' ', ' ', 'a' => $accession);
-  $marc_record->insert_fields_ordered($fld099);
-
   # Add 049 field: 049 ## $a CLUV $o muclsdsdr $p {SPAC} $l {barcode} 
   my $fld049 = MARC::Field->new('049', ' ', ' ', 
     'a' => 'CLUV',
@@ -491,6 +487,10 @@ sub add_local_fields {
 	'l' => $barcode
   );
   $marc_record->insert_fields_ordered($fld049);
+  
+  # Add 099 field with accession number: 099 ## $a $accession
+  my $fld099 = MARC::Field->new('099', ' ', ' ', 'a' => $accession);
+  $marc_record->insert_fields_ordered($fld099);
 
   # Add 910 field: 910 ## $a meherbatch {date processed in YYMMDD format}
   my $fld910 = MARC::Field->new('910', ' ', ' ', 'a' => 'meherbatch ' . get_yymmdd());
