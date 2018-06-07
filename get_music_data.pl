@@ -6,6 +6,7 @@ use JSON qw(decode_json);
 use LWP::UserAgent;
 use MARC::File::XML (BinaryEncoding => 'utf8', RecordFormat => 'MARC21');
 use MARC::Batch;
+use String::Similarity qw(similarity);
 use feature qw(say);
 use strict;
 use warnings;
@@ -90,6 +91,28 @@ foreach my $line (@lines) {
   say "\tDC Title: " . $discogs_data{'title'} . " / " . $discogs_data{'artist'} if %discogs_data;;
   say "\tMB Title: " . $mb_data{'title'} . " / " . $mb_data{'artist'} if %mb_data;
   say "";
+
+  ### TODO: Experiment
+  my $discogs_title;
+  my $mb_title;
+  my $wc_title;
+
+  # Full title / artist - too much variation for good comparison?
+  #$discogs_title = $discogs_data{'title'} . " / " . $discogs_data{'artist'} if %discogs_data;
+  #$mb_title = $mb_data{'title'} . " / " . $mb_data{'artist'} if %mb_data;
+  #$wc_title = $marc_record->title() if $marc_record;
+
+  # Title only - better for comparison?  Use $anpb from MARC, but not $c
+  $discogs_title = $discogs_data{'title'} if %discogs_data;
+  $mb_title = $mb_data{'title'} if %mb_data;
+  $wc_title = $marc_record->field('245')->as_string('anpb') if $marc_record;
+
+  # Normalized title w/similarity
+  # TODO: Integrate this with WorldCat record evaluation for pubnum searches?
+  say "WC --> DC: ", similarity(normalize($wc_title), normalize($discogs_title)) if $wc_title && $discogs_title;
+  say "WC --> MB: ", similarity(normalize($wc_title), normalize($mb_title)) if $wc_title && $mb_title;
+  say "DC --> MB: ", similarity(normalize($discogs_title), normalize($mb_title)) if $discogs_title && $mb_title;
+
   # Discogs and Musicbrainz have rate limits on their APIs
   sleep 1;
 }
@@ -528,5 +551,20 @@ sub get_yymmdd {
   return $year.$mon.$mday;
 }
 
+##############################
+# Normalize strings for comparison:
+# remove spaces and punctuation, then
+# force string to upper-case.
+sub normalize {
+  my $string = shift;
+#say "IN : $string";
+  $string =~ s/[[:punct:]]//g;
+  $string =~ s/[[:space:]]//g;
+  $string = uc($string);
+#say "OUT: $string";
+  return $string;
+}
+
+##############################
 ##############################
 ##############################
