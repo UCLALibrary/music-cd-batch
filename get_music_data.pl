@@ -50,10 +50,11 @@ foreach my $line (@lines) {
   my %discogs_data = search_discogs($search_term);
   my %mb_data = search_musicbrainz($search_term);
 
-  my $marc_record = search_worldcat($search_term);
+  #####my $marc_record = search_worldcat($search_term);
+  my @marc_records = search_worldcat($search_term);
   # If initial search on UPC didn't find anything, try searching for
   # the music publisher numbers from Discogs/MusicBrainz.
-  if (! $marc_record) {
+  if (! @marc_records) {
     # Use hash for automatic uniqueness; values all are 1, we only care about the unique keys.
     my %search_terms;
     $search_terms{$discogs_data{'pub_num'}} = 1 if $discogs_data{'pub_num'};
@@ -63,9 +64,16 @@ foreach my $line (@lines) {
 ###say Dumper(@search_terms);
 	if (@search_terms) {
 	  say "Searching WorldCat again for music publisher numbers... ", join(", ", @search_terms);
-      $marc_record = search_worldcat(\@search_terms);
+      ####$marc_record = search_worldcat(\@search_terms);
+      @marc_records = search_worldcat(\@search_terms);
 	}
   }
+
+  my @titles = ();
+  push (@titles, $discogs_data{'title'}) if %discogs_data;
+  push (@titles, $mb_data{'title'}) if %mb_data;
+
+  my $marc_record = evaluate_marc(\@marc_records, \@titles) if @marc_records;
 
   # If there's a MARC record now, use it
   if ($marc_record) {
@@ -93,9 +101,9 @@ foreach my $line (@lines) {
   say "";
 
   ### TODO: Experiment
-  my $discogs_title;
-  my $mb_title;
-  my $wc_title;
+  #my $discogs_title;
+  #my $mb_title;
+  #my $wc_title;
 
   # Full title / artist - too much variation for good comparison?
   #$discogs_title = $discogs_data{'title'} . " / " . $discogs_data{'artist'} if %discogs_data;
@@ -103,15 +111,15 @@ foreach my $line (@lines) {
   #$wc_title = $marc_record->title() if $marc_record;
 
   # Title only - better for comparison?  Use $anpb from MARC, but not $c
-  $discogs_title = $discogs_data{'title'} if %discogs_data;
-  $mb_title = $mb_data{'title'} if %mb_data;
-  $wc_title = $marc_record->field('245')->as_string('anpb') if $marc_record;
+  #$discogs_title = $discogs_data{'title'} if %discogs_data;
+  #$mb_title = $mb_data{'title'} if %mb_data;
+  #$wc_title = $marc_record->field('245')->as_string('anpb') if $marc_record;
 
   # Normalized title w/similarity
   # TODO: Integrate this with WorldCat record evaluation for pubnum searches?
-  say "WC --> DC: ", similarity(normalize($wc_title), normalize($discogs_title)) if $wc_title && $discogs_title;
-  say "WC --> MB: ", similarity(normalize($wc_title), normalize($mb_title)) if $wc_title && $mb_title;
-  say "DC --> MB: ", similarity(normalize($discogs_title), normalize($mb_title)) if $discogs_title && $mb_title;
+  #say "WC --> DC: ", similarity(normalize($wc_title), normalize($discogs_title)) if $wc_title && $discogs_title;
+  #say "WC --> MB: ", similarity(normalize($wc_title), normalize($mb_title)) if $wc_title && $mb_title;
+  #say "DC --> MB: ", similarity(normalize($discogs_title), normalize($mb_title)) if $discogs_title && $mb_title;
 
   # Discogs and Musicbrainz have rate limits on their APIs
   sleep 1;
@@ -213,15 +221,18 @@ sub search_musicbrainz {
 sub search_worldcat {
   my $search_terms_ref = shift;
   my $oclc = UCLA::Worldcat::WSAPI->new(WSKEY);
+  # TODO: Experiment with number of records - default is 10
+  $oclc->max_records(20);
 
   my @marc_records = $oclc->search_sru_sn($search_terms_ref);
   say "Found MARC records: " . scalar(@marc_records);
 
   # Evaluate MARC records, rejecting unsuitable ones, returning the one best remaining one (or none if all get rejected)
-  my $best_record = evaluate_marc(\@marc_records) if @marc_records;
+  ####my $best_record = evaluate_marc(\@marc_records) if @marc_records;
 
   # TODO: Decide what you're really returning from here......
-  return $best_record;
+  ###return $best_record;
+  return @marc_records;
 }
 
 ##############################
@@ -229,10 +240,11 @@ sub search_worldcat {
 # the best remaining one record (or none, if all are rejected).
 sub evaluate_marc {
   my $marc_records = shift; # array reference
+  my $titles_ref = shift; # array reference
   my $best_marc;
 
   # Have to de-reference arrays...
-  @$marc_records = remove_unsuitable_records(\@$marc_records);
+  @$marc_records = remove_unsuitable_records(\@$marc_records, $titles_ref);
 
   # How many records are left?
   my $record_count = scalar(@$marc_records);
@@ -259,6 +271,7 @@ sub evaluate_marc {
 # Remove unsuitable records from an array, returning just the acceptable ones.
 sub remove_unsuitable_records {
   my $marc_records = shift; # array reference
+  my $titles_ref = shift; # array reference
   my @keep_records = ();
 
   foreach my $marc_record (@$marc_records) {
@@ -272,6 +285,9 @@ sub remove_unsuitable_records {
 	  say "\tREJECTED oclc $oclc_number - held by CLU";
 	  next;
 	}
+
+	# Reject if MARC title is too different from Discogs/MusicBrainz title(s)
+	next if title_differs_too_much($marc_record, $titles_ref);
 
 	# Made it to here: save the record
 	push(@keep_records, $marc_record);
@@ -423,6 +439,50 @@ sub score_040b {
 	$score = 10;
   }
   return $score;
+}
+
+##############################
+# Compare MARC title with Discogs/MusicBrainz title(s).
+# Return true if too different, beyond threshhold.
+sub title_differs_too_much {
+  my $marc_record = shift;
+  my $titles_ref = shift;  # array reference
+  my $too_different = 0; # false by default
+  my $total_score = 0;
+  my $marc_title = $marc_record->field('245')->as_string('anpb');
+  my $oclc_number = $marc_record->oclc_number();
+
+  # Convert array to hash to de-dup
+  my %titles = map { $_ => 1 } @$titles_ref;
+  foreach my $title (keys %titles) {
+    my $score = similarity(normalize($marc_title), normalize($title));
+	if ($score < 0.4) {
+	  # Experiment: if full title is too different, maybe just 245 $a is closer?
+	  my $short_title = $marc_record->field('245')->as_string('a');
+	  if ($short_title ne $marc_title) {
+	    $score = similarity(normalize($short_title), normalize($title));
+	  }
+	  if ($score < 0.4) {
+	    say "\tWarning: Titles are too different: $score";
+	    say "\t\tMARC Title : $marc_title (OCLC $oclc_number)";
+	    say "\t\tOther Title: $title";
+	  }
+	}
+	$total_score += $score;
+  }
+
+  my $number_of_keys = scalar(keys %titles);
+  if ($number_of_keys > 0) {
+    my $average = $total_score / $number_of_keys;
+    if ($average < 0.37) {
+      say "\t\tREJECTED OCLC $oclc_number: Titles are too different: $average";
+      $too_different = 1;
+    } else {
+      say "\tDEBUG: Average is $average";
+    }
+  }
+
+  return $too_different;
 }
 
 ##############################
