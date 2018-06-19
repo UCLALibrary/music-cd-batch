@@ -634,7 +634,7 @@ sub create_marc_shared {
 # Create MARC record from Discogs data
 sub create_marc_discogs {
   my %data = @_;
-say "DTEST: ", $data{'title'};
+  say "Creating MARC from Discogs data for: ", $data{'title'};
   my $full_data = $data{'original'};
   my $marc = create_marc_shared();
 
@@ -671,15 +671,15 @@ say "DTEST: ", $data{'title'};
   # Create 245
   my $title = $full_data->{'title'};
   my $artist = $full_data->{'artists'}->[0]->{'name'} if $full_data->{'artists'}->[0]->{'name'};
+  my $ind2 = get_filing_indicator($title);
   if ($artist) {
     $title .= ' / ';
 	$artist .= '.';
-    $fld = MARC::Field->new('245', '0', '0', 'a' => $title, 'c' => $artist);
+    $fld = MARC::Field->new('245', '0', $ind2, 'a' => $title, 'c' => $artist);
   } else {
     $title .= '.';
-    $fld = MARC::Field->new('245', '0', '0', 'a' => $title);
+    $fld = MARC::Field->new('245', '0', $ind2, 'a' => $title);
   }
-  # TODO: Set 1st indicator correctly
   $marc->insert_fields_ordered($fld);
 
   # Create 264
@@ -738,7 +738,7 @@ say "DTEST: ", $data{'title'};
 # Create MARC record from MusicBrainz data
 sub create_marc_mb {
   my %data = @_;
-say "MTEST: ", $data{'title'};
+  say "Creating MARC from MusicBrainz data for: ", $data{'title'};
   my $full_data = $data{'original'};
   my $marc = create_marc_shared();
 
@@ -770,15 +770,15 @@ say "MTEST: ", $data{'title'};
   # Create 245
   my $title = $full_data->{'title'};
   my $artist = $full_data->{'artist-credit'}->[0]->{'artist'}->{'name'} if $full_data->{'artist-credit'}->[0]->{'artist'}->{'name'};
+  my $ind2 = get_filing_indicator($title);
   if ($artist) {
     $title .= ' / ';
 	$artist .= '.';
-    $fld = MARC::Field->new('245', '0', '0', 'a' => $title, 'c' => $artist);
+    $fld = MARC::Field->new('245', '0', $ind2, 'a' => $title, 'c' => $artist);
   } else {
     $title .= '.';
-    $fld = MARC::Field->new('245', '0', '0', 'a' => $title);
+    $fld = MARC::Field->new('245', '0', $ind2, 'a' => $title);
   }
-  # TODO: Set 1st indicator correctly
   $marc->insert_fields_ordered($fld);
 
   # Create 264
@@ -867,4 +867,15 @@ sub normalize {
 }
 
 ##############################
+# Get filing indicator for title, for use in MARC record.
+sub get_filing_indicator {
+  my $title = shift;
+  # Default is 0; set other values based on start of title.
+  my $ind2 = '0';
+  $ind2 = '2' if $title =~ /^A /;
+  $ind2 = '3' if $title =~ /^An /;
+  $ind2 = '4' if $title =~ /^The /;
+  return $ind2;
+}
+
 ##############################
