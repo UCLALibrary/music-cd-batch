@@ -92,34 +92,22 @@ foreach my $line (@lines) {
     say "\tWC Title: ", $marc_record->title();
 
   } else {
-    # TODO: Create basic MARC record from DC/MB data?
+    # Create basic MARC record from DC/MB data
+	# Prefer MusicBrainz: use it if available, else Discogs
+	if (%mb_data) {
+	  create_marc_mb(%mb_data);
+	} elsif (%discogs_data) {
+	  create_marc_discogs(%discogs_data);
+	}
+	else {
+	  say "MARC not created: no data available";
+	}
   }
 
   # Print artists & titles for comparison
   say "\tDC Title: " . $discogs_data{'title'} . " / " . $discogs_data{'artist'} if %discogs_data;;
   say "\tMB Title: " . $mb_data{'title'} . " / " . $mb_data{'artist'} if %mb_data;
   say "";
-
-  ### TODO: Experiment
-  #my $discogs_title;
-  #my $mb_title;
-  #my $wc_title;
-
-  # Full title / artist - too much variation for good comparison?
-  #$discogs_title = $discogs_data{'title'} . " / " . $discogs_data{'artist'} if %discogs_data;
-  #$mb_title = $mb_data{'title'} . " / " . $mb_data{'artist'} if %mb_data;
-  #$wc_title = $marc_record->title() if $marc_record;
-
-  # Title only - better for comparison?  Use $anpb from MARC, but not $c
-  #$discogs_title = $discogs_data{'title'} if %discogs_data;
-  #$mb_title = $mb_data{'title'} if %mb_data;
-  #$wc_title = $marc_record->field('245')->as_string('anpb') if $marc_record;
-
-  # Normalized title w/similarity
-  # TODO: Integrate this with WorldCat record evaluation for pubnum searches?
-  #say "WC --> DC: ", similarity(normalize($wc_title), normalize($discogs_title)) if $wc_title && $discogs_title;
-  #say "WC --> MB: ", similarity(normalize($wc_title), normalize($mb_title)) if $wc_title && $mb_title;
-  #say "DC --> MB: ", similarity(normalize($discogs_title), normalize($mb_title)) if $discogs_title && $mb_title;
 
   # Discogs and Musicbrainz have rate limits on their APIs
   sleep 1;
@@ -172,6 +160,8 @@ sub search_discogs {
 		$discogs_data{'title'} = $title if $title;
 		$discogs_data{'artist'} = $artist if $artist;
 		$discogs_data{'pub_num'} = $pub_num if $pub_num;
+		# Store a reference to the whole original JSON as well, for later use
+		$discogs_data{'original'} = $release_json;
 		last; # Only check the first matching resource_url
 	  }
 	}
@@ -209,6 +199,8 @@ sub search_musicbrainz {
       say "\tMB Pubnum: $pub_num";
       #say "";
 	  %mb_data = ('title' => $title, 'artist' => $artist, 'pub_num' => $pub_num);
+      # Store a reference to the whole original JSON as well, for later use
+	  $mb_data{'original'} = $release;
 	}
   }
   return %mb_data;
@@ -591,6 +583,141 @@ sub add_local_fields {
 
   return $marc_record;
 
+}
+
+##############################
+# Create MARC records with data common to both Discogs and MusicBrainz
+sub create_marc_shared {
+  my $marc = MARC::Record->new();
+  $marc->encoding('UTF-8');
+  $marc->leader('00000njm a22003373i 4500');
+  # TODO: Placeholder 001 field
+  $marc->append_fields(MARC::Field->new('001', 'ocm00000NEW'));
+  $marc->append_fields(MARC::Field->new('007', 'sd fungnn|||eu'));
+  $marc->append_fields(MARC::Field->new('008', get_yymmdd() . 's        xx   nn           n zxx d'));
+
+  # 3xx fields
+  $marc->append_fields(MARC::Field->new('336', ' ', ' ',
+    'a' => 'performed music',
+	'b' => 'prm',
+	'2' => 'rdacontent'
+  ));
+  $marc->append_fields(MARC::Field->new('337', ' ', ' ',
+    'a' => 'audio',
+	'b' => 's',
+	'2' => 'rdamedia'
+  ));
+  $marc->append_fields(MARC::Field->new('338', ' ', ' ',
+    'a' => 'audio disc',
+	'b' => 'sd',
+	'2' => 'rdacarrier'
+  ));
+  $marc->append_fields(MARC::Field->new('344', ' ', ' ',
+    'a' => 'digital',
+	'b' => 'optical',
+	'2' => 'rda'
+  ));
+  $marc->append_fields(MARC::Field->new('347', ' ', ' ',
+    'a' => 'audio file',
+	'b' => 'CD audio',
+	'2' => 'rda'
+  ));
+
+  return $marc;
+}
+
+##############################
+# Create MARC record from Discogs data
+sub create_marc_discogs {
+  my %data = @_;
+say "DTEST: ", $data{'title'};
+  my $full_data = $data{'original'};
+  my $marc = create_marc_shared();
+  # Update 008
+  my $fld008 = $marc->field('008');
+  my $fld008_data = $fld008->data();
+  substr($fld008_data, 7, 4) = substr($full_data->{'released'}, 0, 4) if $full_data->{'released'};
+  substr($fld008_data, 35, 3) = 'zxx';
+  $fld008->update($fld008_data);
+
+  # Generic MARC field variable for frequent reuse below
+  my $fld;
+
+  # Create 245
+  my $title = $full_data->{'title'};
+  my $artist = $full_data->{'artists'}->[0]->{'name'} if $full_data->{'artists'}->[0]->{'name'};
+  if ($artist) {
+    $title .= ' / ';
+	$artist .= '.';
+    $fld = MARC::Field->new('245', '0', '0', 'a' => $title, 'c' => $artist);
+  } else {
+    $title .= '.';
+    $fld = MARC::Field->new('245', '0', '0', 'a' => $title);
+  }
+  # TODO: Set 1st indicator correctly
+  $marc->insert_fields_ordered($fld);
+
+  # Create 264
+  $fld = MARC::Field->new('264', ' ', '0', 'a' => '[Place of publication not identified] : ');
+  my $publisher = $full_data->{'labels'}->[0]->{'name'};
+  if ($publisher) {
+    $fld->add_subfields('b' => $publisher . ', ');
+  } else {
+    $fld->add_subfields('b' => '[publisher not identified], ');
+  }
+  my $year = substr($full_data->{'released'}, 0, 4) if $full_data->{'released'};
+  if ($year) {
+    $fld->add_subfields('c' => "[$year]");
+  } else {
+    $fld->add_subfields('c' => '[date of publication not identified]');
+  }
+  $marc->insert_fields_ordered($fld);
+
+  # Create 300
+  my $quantity = $full_data->{'formats'}->[0]->{'qty'} if $full_data->{'formats'}->[0]->{'qty'};
+  $quantity = 1 if not $quantity || $quantity == 0;
+  my $discs = $quantity > 1 ? 'discs' : 'disc';
+  $fld = MARC::Field->new('300', ' ', ' ',
+    'a' => "$quantity audio $discs : ",
+	'b' => 'digital ; ',
+	'c' => '4 3/4 in.'
+  );
+  $marc->insert_fields_ordered($fld);
+
+  # Create 500
+  $marc->insert_fields_ordered(MARC::Field->new('500', ' ', ' ', 'a' => 'Title from Discogs database.'));
+  
+  # Create 505, if possible
+  my $tracks_combined = '';
+  foreach my $track (@{$full_data->{'tracklist'}}) {
+    # Add separator if needed
+    $tracks_combined .= ' -- ' if $tracks_combined;
+	$tracks_combined .= $track->{'title'};
+  }
+  # Add a period to the end
+  $tracks_combined .= '.';
+  $marc->insert_fields_ordered(MARC::Field->new('505', '0', ' ', 'a' => $tracks_combined));
+
+  # Create 653(s), if possible
+  foreach my $genre (@{$full_data->{'genres'}}) {
+    $marc->insert_fields_ordered(MARC::Field->new('653', ' ', '6', 'a' => $genre));
+  }
+
+  # Create 720, if possible
+  $marc->insert_fields_ordered(MARC::Field->new('720', ' ', ' ', 'a' => $full_data->{'artists_sort'} . '.')) if $full_data->{'artists_sort'};
+  
+
+  say $marc->as_formatted();
+}
+
+##############################
+# Create MARC record from MusicBrainz data
+sub create_marc_mb {
+  my %data = @_;
+  say "MTEST: ", $data{'title'};
+  my $marc = create_marc_shared();
+
+  say $marc->as_formatted();
 }
 
 ##############################
