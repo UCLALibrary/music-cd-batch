@@ -35,7 +35,8 @@ my $upc_file = $ARGV[0];
 # Top-level resources used in various subroutines
 my $browser = LWP::UserAgent->new();
 $browser->agent('UCLA Library VBT-1035');
-my $marc_file = $upc_file . '.mrc';
+my $oclc_marc_file = $upc_file . '_oclc.mrc';
+my $orig_marc_file = $upc_file . '_orig.mrc';
 
 # Read search terms from file, one search per line.
 my @lines = read_file($upc_file, chomp => 1);
@@ -73,7 +74,9 @@ foreach my $line (@lines) {
   push (@titles, $discogs_data{'title'}) if %discogs_data;
   push (@titles, $mb_data{'title'}) if %mb_data;
 
-  my $marc_record = evaluate_marc(\@marc_records, \@titles) if @marc_records;
+  # Make sure this is reset for every iteration
+  my $marc_record; 
+  $marc_record = evaluate_marc(\@marc_records, \@titles) if @marc_records;
 
   # If there's a MARC record now, use it
   if ($marc_record) {
@@ -82,10 +85,7 @@ foreach my $line (@lines) {
 	report_marc_problems($marc_record);
 	$marc_record = add_local_fields($marc_record, $accession, $barcode);
 
-	# Save the record as binary MARC
-    open MARC, '>>:utf8', $marc_file;
-    print MARC $marc_record->as_usmarc();
-    close MARC;
+	save_marc($marc_record, $oclc_marc_file);
 
 	# Output for title review
 	say "";
@@ -95,9 +95,11 @@ foreach my $line (@lines) {
     # Create basic MARC record from DC/MB data
 	# Prefer MusicBrainz: use it if available, else Discogs
 	if (%mb_data) {
-	  create_marc_mb(%mb_data);
+	  $marc_record = create_marc_mb(%mb_data);
+	  save_marc($marc_record, $orig_marc_file);
 	} elsif (%discogs_data) {
-	  create_marc_discogs(%discogs_data);
+	  $marc_record = create_marc_discogs(%discogs_data);
+	  save_marc($marc_record, $orig_marc_file);
 	}
 	else {
 	  say "MARC not created: no data available";
@@ -633,6 +635,7 @@ sub create_marc_discogs {
 say "DTEST: ", $data{'title'};
   my $full_data = $data{'original'};
   my $marc = create_marc_shared();
+
   # Update 008
   my $fld008 = $marc->field('008');
   my $fld008_data = $fld008->data();
@@ -705,19 +708,98 @@ say "DTEST: ", $data{'title'};
 
   # Create 720, if possible
   $marc->insert_fields_ordered(MARC::Field->new('720', ' ', ' ', 'a' => $full_data->{'artists_sort'} . '.')) if $full_data->{'artists_sort'};
-  
 
-  say $marc->as_formatted();
+####say $marc->as_formatted();
+  return $marc;
 }
 
 ##############################
 # Create MARC record from MusicBrainz data
 sub create_marc_mb {
   my %data = @_;
-  say "MTEST: ", $data{'title'};
+say "MTEST: ", $data{'title'};
+  my $full_data = $data{'original'};
   my $marc = create_marc_shared();
 
-  say $marc->as_formatted();
+  # Update 008
+  my $fld008 = $marc->field('008');
+  my $fld008_data = $fld008->data();
+  substr($fld008_data, 7, 4) = substr($full_data->{'date'}, 0, 4) if $full_data->{'date'};
+  my $lang = $full_data->{'text-representation'}->{'language'} if $full_data->{'text-representation'}->{'language'};
+  substr($fld008_data, 35, 3) = 'eng' if $lang eq 'eng';
+  $fld008->update($fld008_data);
+
+  # Generic MARC field variable for frequent reuse below
+  my $fld;
+
+  # Create 245
+  my $title = $full_data->{'title'};
+  my $artist = $full_data->{'artist-credit'}->[0]->{'artist'}->{'name'} if $full_data->{'artist-credit'}->[0]->{'artist'}->{'name'};
+  if ($artist) {
+    $title .= ' / ';
+	$artist .= '.';
+    $fld = MARC::Field->new('245', '0', '0', 'a' => $title, 'c' => $artist);
+  } else {
+    $title .= '.';
+    $fld = MARC::Field->new('245', '0', '0', 'a' => $title);
+  }
+  # TODO: Set 1st indicator correctly
+  $marc->insert_fields_ordered($fld);
+
+  # Create 264
+  $fld = MARC::Field->new('264', ' ', '0', 'a' => '[Place of publication not identified] : ');
+  my $publisher = $full_data->{'label-info'}->[0]->{'label'}->{'name'};
+  if ($publisher) {
+    $fld->add_subfields('b' => $publisher . ', ');
+  } else {
+    $fld->add_subfields('b' => '[publisher not identified], ');
+  }
+  my $year = substr($full_data->{'date'}, 0, 4) if $full_data->{'date'};
+  if ($year) {
+    $fld->add_subfields('c' => "[$year]");
+  } else {
+    $fld->add_subfields('c' => '[date of publication not identified]');
+  }
+  $marc->insert_fields_ordered($fld);
+
+  # Create 300
+  my $quantity = $full_data->{'media'}->[0]->{'disc-count'} if $full_data->{'media'}->[0]->{'disc-count'};
+  $quantity = 1 if not $quantity || $quantity == 0;
+  my $discs = $quantity > 1 ? 'discs' : 'disc';
+  $fld = MARC::Field->new('300', ' ', ' ',
+    'a' => "$quantity audio $discs : ",
+	'b' => 'digital ; ',
+	'c' => '4 3/4 in.'
+  );
+  $marc->insert_fields_ordered($fld);
+
+  # Create 500
+  $marc->insert_fields_ordered(MARC::Field->new('500', ' ', ' ', 'a' => 'Title from MusicBrainz database.'));
+
+  # No tracklist data to create 505?
+
+  # Create 653(s), if possible
+  foreach my $genre (@{$full_data->{'tags'}}) {
+    $marc->insert_fields_ordered(MARC::Field->new('653', ' ', '6', 'a' => $genre->{'name'}));
+  }
+
+  # Create 720, if possible
+  $marc->insert_fields_ordered(MARC::Field->new('720', ' ', ' ', 'a' => $full_data->{'artist-credit'}->[0]->{'artist'}->{'sort-name'} . '.'))
+    if $full_data->{'artist-credit'}->[0]->{'artist'}->{'sort-name'};
+
+  
+
+say $marc->as_formatted();
+  return $marc;
+}
+
+##############################
+# Save MARC record to given file, as binary MARC
+sub save_marc {
+  my ($marc_record, $marc_file) = @_;
+  open MARC, '>>:utf8', $marc_file;
+  print MARC $marc_record->as_usmarc();
+  close MARC;
 }
 
 ##############################
@@ -752,6 +834,5 @@ sub normalize {
   return $string;
 }
 
-##############################
 ##############################
 ##############################
