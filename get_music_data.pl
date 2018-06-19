@@ -72,7 +72,11 @@ foreach my $line (@lines) {
 
   # If ANY WorldCat record we found is held by CLU, reject the whole set
   # and exit this iteration: we don't want to add any dup, from any source.
-  next if any_record_has_clu(\@marc_records);
+  if (any_record_has_clu(\@marc_records)) {
+    # Error message was printed in routine; add more info here
+	say "ERROR: Pull CD for review: $accession";
+	next;
+  }
 
   my @titles = ();
   push (@titles, $discogs_data{'title'}) if %discogs_data;
@@ -109,6 +113,7 @@ foreach my $line (@lines) {
 	}
 	else {
 	  say "MARC not created: no data available";
+	  say "ERROR: Pull CD for review: $accession";
 	}
   }
 
