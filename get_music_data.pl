@@ -70,6 +70,10 @@ foreach my $line (@lines) {
 	}
   }
 
+  # If ANY WorldCat record we found is held by CLU, reject the whole set
+  # and exit this iteration: we don't want to add any dup, from any source.
+  next if any_record_has_clu(\@marc_records);
+
   my @titles = ();
   push (@titles, $discogs_data{'title'}) if %discogs_data;
   push (@titles, $mb_data{'title'}) if %mb_data;
@@ -232,6 +236,22 @@ sub search_worldcat {
 }
 
 ##############################
+# Return 1 (true) if any record in set is held by CLU, 0 (false) if not.
+sub any_record_has_clu {
+  my $marc_records_ref = shift; # array reference
+  my $has_clu = 0; # false by default
+  foreach my $marc_record (@$marc_records_ref) {
+	if ($marc_record->held_by_clu()) {
+	  say "\tREJECTING ALL RECORDS: OCLC " . $marc_record->oclc_number() . " is held by CLU";
+	  say "\tWC Title: " . $marc_record->title();
+	  $has_clu = 1; # true
+	  last;
+	}
+  }
+  return $has_clu;
+}
+
+##############################
 # Evaluate MARC records, rejecting unsuitable ones, returning
 # the best remaining one record (or none, if all are rejected).
 sub evaluate_marc {
@@ -277,10 +297,11 @@ sub remove_unsuitable_records {
 	next if ! record_is_suitable($marc_record);
 
 	# Reject if held by CLU
-	if ($marc_record->held_by_clu()) {
-	  say "\tREJECTED oclc $oclc_number - held by CLU";
-	  next;
-	}
+	# TODO: Remove this after testing
+	#if ($marc_record->held_by_clu()) {
+	#  say "\tREJECTED oclc $oclc_number - held by CLU";
+	#  next;
+	#}
 
 	# Reject if MARC title is too different from Discogs/MusicBrainz title(s)
 	next if title_differs_too_much($marc_record, $titles_ref);
