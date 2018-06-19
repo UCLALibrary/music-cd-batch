@@ -96,9 +96,11 @@ foreach my $line (@lines) {
 	# Prefer MusicBrainz: use it if available, else Discogs
 	if (%mb_data) {
 	  $marc_record = create_marc_mb(%mb_data);
+	  $marc_record = add_local_fields($marc_record, $accession, $barcode);
 	  save_marc($marc_record, $orig_marc_file);
 	} elsif (%discogs_data) {
 	  $marc_record = create_marc_discogs(%discogs_data);
+	  $marc_record = add_local_fields($marc_record, $accession, $barcode);
 	  save_marc($marc_record, $orig_marc_file);
 	}
 	else {
@@ -729,7 +731,6 @@ say "DTEST: ", $data{'title'};
   # Create 720, if possible
   $marc->insert_fields_ordered(MARC::Field->new('720', ' ', ' ', 'a' => $full_data->{'artists_sort'} . '.')) if $full_data->{'artists_sort'};
 
-say $marc->as_formatted();
   return $marc;
 }
 
@@ -798,7 +799,7 @@ say "MTEST: ", $data{'title'};
 
   # Create 300
   my $quantity = $full_data->{'media'}->[0]->{'disc-count'} if $full_data->{'media'}->[0]->{'disc-count'};
-  $quantity = 1 if not $quantity || $quantity == 0;
+  $quantity = 1 if (not $quantity or $quantity == 0);
   my $discs = $quantity > 1 ? 'discs' : 'disc';
   $fld = MARC::Field->new('300', ' ', ' ',
     'a' => "$quantity audio $discs : ",
@@ -821,9 +822,6 @@ say "MTEST: ", $data{'title'};
   $marc->insert_fields_ordered(MARC::Field->new('720', ' ', ' ', 'a' => $full_data->{'artist-credit'}->[0]->{'artist'}->{'sort-name'} . '.'))
     if $full_data->{'artist-credit'}->[0]->{'artist'}->{'sort-name'};
 
-  
-
-say $marc->as_formatted();
   return $marc;
 }
 
