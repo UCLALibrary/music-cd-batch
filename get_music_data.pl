@@ -646,6 +646,26 @@ say "DTEST: ", $data{'title'};
   # Generic MARC field variable for frequent reuse below
   my $fld;
 
+  # Create 024, if possible
+  foreach my $id (@{$full_data->{'identifiers'}}) {
+    # Only create fields for things called barcodes
+	if ($id->{'type'} eq 'Barcode') {
+	  $marc->insert_fields_ordered(MARC::Field->new('024', '8', ' ', 'a' => $id->{'value'}));
+	}
+  }
+
+  # Create 028, if possible
+  foreach my $label (@{$full_data->{'labels'}}) {
+    # Discogs uses literal 'none' when no value for catno
+	my $catno = $label->{'catno'};
+	my $name = $label->{'name'};
+	if ($catno && $catno ne 'none') {
+	  $fld = MARC::Field->new('028', '0', '2', 'a' => $catno);
+	  $fld->add_subfields('b', $name) if $name;
+	  $marc->insert_fields_ordered($fld);
+	}
+  }
+
   # Create 245
   my $title = $full_data->{'title'};
   my $artist = $full_data->{'artists'}->[0]->{'name'} if $full_data->{'artists'}->[0]->{'name'};
@@ -709,7 +729,7 @@ say "DTEST: ", $data{'title'};
   # Create 720, if possible
   $marc->insert_fields_ordered(MARC::Field->new('720', ' ', ' ', 'a' => $full_data->{'artists_sort'} . '.')) if $full_data->{'artists_sort'};
 
-####say $marc->as_formatted();
+say $marc->as_formatted();
   return $marc;
 }
 
@@ -731,6 +751,20 @@ say "MTEST: ", $data{'title'};
 
   # Generic MARC field variable for frequent reuse below
   my $fld;
+
+  # Create 024, if possible
+  $marc->insert_fields_ordered(MARC::Field->new('024', '8', ' ', 'a' => $full_data->{'barcode'})) if $full_data->{'barcode'};
+
+  # Create 028, if possible
+  foreach my $label (@{$full_data->{'label-info'}}) {
+	my $catno = $label->{'catalog-number'};
+	my $name = $label->{'label'}->{'name'};
+	if ($catno) {
+	  $fld = MARC::Field->new('028', '0', '2', 'a' => $catno);
+	  $fld->add_subfields('b', $name) if $name;
+	  $marc->insert_fields_ordered($fld);
+	}
+  }
 
   # Create 245
   my $title = $full_data->{'title'};
