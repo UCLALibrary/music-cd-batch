@@ -101,13 +101,13 @@ foreach my $line (@lines) {
 
   } else {
     # Create basic MARC record from DC/MB data
-	# Prefer MusicBrainz: use it if available, else Discogs
-	if (%mb_data) {
-	  $marc_record = create_marc_mb(%mb_data);
+	# Prefer Discogs: use it if available, else MusicBrainz
+	if (%discogs_data) {
+	  $marc_record = create_marc_discogs(%discogs_data);
 	  $marc_record = add_local_fields($marc_record, $accession, $barcode);
 	  save_marc($marc_record, $orig_marc_file);
-	} elsif (%discogs_data) {
-	  $marc_record = create_marc_discogs(%discogs_data);
+	} elsif (%mb_data) {
+	  $marc_record = create_marc_mb(%mb_data);
 	  $marc_record = add_local_fields($marc_record, $accession, $barcode);
 	  save_marc($marc_record, $orig_marc_file);
 	}
@@ -601,14 +601,22 @@ sub add_local_fields {
   my $fld910 = MARC::Field->new('910', ' ', ' ', 'a' => 'meherbatch ' . get_yymmdd());
   $marc_record->insert_fields_ordered($fld910);
 
-  # Add 948 field: 948 ## $a cmc $b meherbatch $c [yyyymmdd] $d 1 
+  # Add 948 field: 
+  # From OCLC: 948 ## $a cmc $b meherbatch $c [yyyymmdd] $d 1 
+  # Original : 948 ## $a cmc $b meherbatch $c [yyyymmdd] $d 3 $k meherbatch 
   # Note date in $c is yyyymmdd; prepend 20, won't care by 2100....
   my $fld948 = MARC::Field->new('948', ' ', ' ',
     'a' => 'cmc',
 	'b' => 'meherbatch',
-	'c' => '20' . get_yymmdd(),
-	'd' => '1'
+	'c' => '20' . get_yymmdd()
   );
+  # Check 001 to decide if OCLC record, via hacky 001 added in create_marc_shared();
+  if ($marc_record->field('001')->data() =~ /ocm00000NEW/) {
+    $fld948->add_subfields('d' => '3', 'k' => 'meherorig');
+  } else {
+    $fld948->add_subfields('d' => '1');
+  }
+
   $marc_record->insert_fields_ordered($fld948);
 
   return $marc_record;
@@ -625,6 +633,13 @@ sub create_marc_shared {
   $marc->append_fields(MARC::Field->new('001', 'ocm00000NEW'));
   $marc->append_fields(MARC::Field->new('007', 'sd fungnn|||eu'));
   $marc->append_fields(MARC::Field->new('008', get_yymmdd() . 's        xx   nn           n zxx d'));
+
+  # 040 field
+  $marc->append_fields(MARC::Field->new('040', ' ', ' ',
+    'a' => 'CLU',
+	'b' => 'eng',
+	'c' => 'CLU'
+  ));
 
   # 3xx fields
   $marc->append_fields(MARC::Field->new('336', ' ', ' ',
@@ -709,7 +724,7 @@ sub create_marc_discogs {
   $marc->insert_fields_ordered($fld);
 
   # Create 264
-  $fld = MARC::Field->new('264', ' ', '0', 'a' => '[Place of publication not identified] :');
+  $fld = MARC::Field->new('264', ' ', '1', 'a' => '[Place of publication not identified] :');
   my $publisher = $full_data->{'labels'}->[0]->{'name'};
   if ($publisher) {
     $fld->add_subfields('b' => $publisher . ',');
@@ -808,7 +823,7 @@ sub create_marc_mb {
   $marc->insert_fields_ordered($fld);
 
   # Create 264
-  $fld = MARC::Field->new('264', ' ', '0', 'a' => '[Place of publication not identified] :');
+  $fld = MARC::Field->new('264', ' ', '1', 'a' => '[Place of publication not identified] :');
   my $publisher = $full_data->{'label-info'}->[0]->{'label'}->{'name'};
   if ($publisher) {
     $fld->add_subfields('b' => $publisher . ',');
