@@ -694,7 +694,7 @@ sub create_marc_discogs {
   my $artist = $full_data->{'artists'}->[0]->{'name'} if $full_data->{'artists'}->[0]->{'name'};
   my $ind2 = get_filing_indicator($title);
   if ($artist) {
-    $title .= ' / ';
+    $title .= ' /';
 	$artist .= '.';
     $fld = MARC::Field->new('245', '0', $ind2, 'a' => $title, 'c' => $artist);
   } else {
@@ -704,12 +704,12 @@ sub create_marc_discogs {
   $marc->insert_fields_ordered($fld);
 
   # Create 264
-  $fld = MARC::Field->new('264', ' ', '0', 'a' => '[Place of publication not identified] : ');
+  $fld = MARC::Field->new('264', ' ', '0', 'a' => '[Place of publication not identified] :');
   my $publisher = $full_data->{'labels'}->[0]->{'name'};
   if ($publisher) {
-    $fld->add_subfields('b' => $publisher . ', ');
+    $fld->add_subfields('b' => $publisher . ',');
   } else {
-    $fld->add_subfields('b' => '[publisher not identified], ');
+    $fld->add_subfields('b' => '[publisher not identified],');
   }
   my $year = substr($full_data->{'released'}, 0, 4) if $full_data->{'released'};
   if ($year) {
@@ -724,8 +724,8 @@ sub create_marc_discogs {
   $quantity = 1 if not $quantity || $quantity == 0;
   my $discs = $quantity > 1 ? 'discs' : 'disc';
   $fld = MARC::Field->new('300', ' ', ' ',
-    'a' => "$quantity audio $discs : ",
-	'b' => 'digital ; ',
+    'a' => "$quantity audio $discs :",
+	'b' => 'digital ;',
 	'c' => '4 3/4 in.'
   );
   $marc->insert_fields_ordered($fld);
@@ -793,7 +793,7 @@ sub create_marc_mb {
   my $artist = $full_data->{'artist-credit'}->[0]->{'artist'}->{'name'} if $full_data->{'artist-credit'}->[0]->{'artist'}->{'name'};
   my $ind2 = get_filing_indicator($title);
   if ($artist) {
-    $title .= ' / ';
+    $title .= ' /';
 	$artist .= '.';
     $fld = MARC::Field->new('245', '0', $ind2, 'a' => $title, 'c' => $artist);
   } else {
@@ -803,12 +803,12 @@ sub create_marc_mb {
   $marc->insert_fields_ordered($fld);
 
   # Create 264
-  $fld = MARC::Field->new('264', ' ', '0', 'a' => '[Place of publication not identified] : ');
+  $fld = MARC::Field->new('264', ' ', '0', 'a' => '[Place of publication not identified] :');
   my $publisher = $full_data->{'label-info'}->[0]->{'label'}->{'name'};
   if ($publisher) {
-    $fld->add_subfields('b' => $publisher . ', ');
+    $fld->add_subfields('b' => $publisher . ',');
   } else {
-    $fld->add_subfields('b' => '[publisher not identified], ');
+    $fld->add_subfields('b' => '[publisher not identified],');
   }
   my $year = substr($full_data->{'date'}, 0, 4) if $full_data->{'date'};
   if ($year) {
@@ -823,8 +823,8 @@ sub create_marc_mb {
   $quantity = 1 if (not $quantity or $quantity == 0);
   my $discs = $quantity > 1 ? 'discs' : 'disc';
   $fld = MARC::Field->new('300', ' ', ' ',
-    'a' => "$quantity audio $discs : ",
-	'b' => 'digital ; ',
+    'a' => "$quantity audio $discs :",
+	'b' => 'digital ;',
 	'c' => '4 3/4 in.'
   );
   $marc->insert_fields_ordered($fld);
