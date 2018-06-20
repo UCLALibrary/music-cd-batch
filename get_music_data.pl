@@ -56,16 +56,9 @@ foreach my $line (@lines) {
   # If initial search on UPC didn't find anything, try searching for
   # the music publisher numbers from Discogs/MusicBrainz.
   if (! @marc_records) {
-    # Use hash for automatic uniqueness; values all are 1, we only care about the unique keys.
-    my %search_terms;
-    $search_terms{$discogs_data{'pub_num'}} = 1 if $discogs_data{'pub_num'};
-    $search_terms{$mb_data{'pub_num'}} = 1 if %mb_data;
-	# Convert the hash to an array
-    my @search_terms = (keys %search_terms);
-###say Dumper(@search_terms);
+	my @search_terms = get_all_pub_numbers(\%discogs_data, \%mb_data);
 	if (@search_terms) {
 	  say "Searching WorldCat again for music publisher numbers... ", join(", ", @search_terms);
-      ####$marc_record = search_worldcat(\@search_terms);
       @marc_records = search_worldcat(\@search_terms);
 	}
   }
@@ -174,7 +167,7 @@ sub search_discogs {
 		$discogs_data{'artist'} = $artist if $artist;
 		$discogs_data{'pub_num'} = $pub_num if $pub_num;
 		# Store a reference to the whole original JSON as well, for later use
-		$discogs_data{'original'} = $release_json;
+		$discogs_data{'json'} = $release_json;
 		last; # Only check the first matching resource_url
 	  }
 	}
@@ -213,7 +206,7 @@ sub search_musicbrainz {
       #say "";
 	  %mb_data = ('title' => $title, 'artist' => $artist, 'pub_num' => $pub_num);
       # Store a reference to the whole original JSON as well, for later use
-	  $mb_data{'original'} = $release;
+	  $mb_data{'json'} = $json;
 	}
   }
   return %mb_data;
@@ -676,7 +669,7 @@ sub create_marc_shared {
 sub create_marc_discogs {
   my %data = @_;
   say "Creating MARC from Discogs data for: ", $data{'title'};
-  my $full_data = $data{'original'};
+  my $full_data = $data{'json'};
   my $marc = create_marc_shared();
 
   # Update 008
@@ -786,7 +779,7 @@ sub create_marc_discogs {
 sub create_marc_mb {
   my %data = @_;
   say "Creating MARC from MusicBrainz data for: ", $data{'title'};
-  my $full_data = $data{'original'};
+  my $full_data = $data{'json'};
   my $marc = create_marc_shared();
 
   # Update 008
@@ -931,4 +924,36 @@ sub get_filing_indicator {
   return $ind2;
 }
 
+##############################
+# Get all publisher/catalog numbers from Discogs and MusicBrainz JSON data.
+sub get_all_pub_numbers {
+  my ($dc_data_ref, $mb_data_ref) = @_; # 2 hash refs
+  my $dc_json = $dc_data_ref->{'json'};
+  my $mb_json = $mb_data_ref->{'json'};
+
+  # Use a hash to automatically dedup; we care only about keys, so all values will be 1.
+  my %pub_numbers;
+
+  # Discogs data
+  foreach my $label (@{$dc_json->{'labels'}}) {
+    # Discogs uses literal 'none' when no value for catno
+	my $pub_num = $label->{'catno'};
+	$pub_numbers{normalize_pub_num($pub_num)} = 1 if ($pub_num && $pub_num ne 'none');
+  }
+
+  # MusicBrainz data
+  # JSON contains all releases, though we only used the first for artist/title info elsewhere.
+  foreach my $release (@{$mb_json->{'releases'}}) {
+    foreach my $label (@{$release->{'label-info'}}) {
+      my $pub_num = $label->{'catalog-number'};
+	  $pub_numbers{normalize_pub_num($pub_num)} = 1 if $pub_num;
+	}
+  }
+
+#say Dumper(%pub_numbers);
+  # Return just the keys - the unique pub numbers
+  return (keys %pub_numbers);
+}
+
+##############################
 ##############################
