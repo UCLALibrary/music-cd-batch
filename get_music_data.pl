@@ -698,15 +698,21 @@ sub create_marc_discogs {
   }
 
   # Create 028, if possible
+  my %catnos;
   foreach my $label (@{$full_data->{'labels'}}) {
     # Discogs uses literal 'none' when no value for catno
 	my $catno = $label->{'catno'};
 	my $name = $label->{'name'};
 	if ($catno && $catno ne 'none') {
-	  $fld = MARC::Field->new('028', '0', '2', 'a' => $catno);
-	  $fld->add_subfields('b', $name) if $name;
-	  $marc->insert_fields_ordered($fld);
+	  # De-dup on catno, via hash; name might not exist
+	  $catnos{$catno} = $name;
 	}
+  }
+  # Now go through the hash, creating an 028 for each one remaining
+  foreach my $catno (keys %catnos) {
+    $fld = MARC::Field->new('028', '0', '2', 'a' => $catno);
+    $fld->add_subfields('b', $catnos{$catno}) if $catnos{$catno};
+    $marc->insert_fields_ordered($fld);
   }
 
   # Create 245
@@ -798,14 +804,20 @@ sub create_marc_mb {
   $marc->insert_fields_ordered(MARC::Field->new('024', '8', ' ', 'a' => $full_data->{'barcode'})) if $full_data->{'barcode'};
 
   # Create 028, if possible
+  my %catnos;
   foreach my $label (@{$full_data->{'label-info'}}) {
 	my $catno = $label->{'catalog-number'};
 	my $name = $label->{'label'}->{'name'};
 	if ($catno) {
-	  $fld = MARC::Field->new('028', '0', '2', 'a' => $catno);
-	  $fld->add_subfields('b', $name) if $name;
-	  $marc->insert_fields_ordered($fld);
+	  # De-dup on catno, via hash; name might not exist
+	  $catnos{$catno} = $name;
 	}
+  }
+  # Now go through the hash, creating an 028 for each one remaining
+  foreach my $catno (keys %catnos) {
+    $fld = MARC::Field->new('028', '0', '2', 'a' => $catno);
+	$fld->add_subfields('b', $catnos{$catno}) if $catnos{$catno};
+    $marc->insert_fields_ordered($fld);
   }
 
   # Create 245
