@@ -336,6 +336,13 @@ sub record_is_suitable {
     say "\tREJECTED oclc $oclc_number - bad Type in LDR/06 " . $marc_record->record_type();
 	$OK = 0;
   }
+
+  # Check 040 $b (language of cataloging), rejecting records with value other than 'eng'
+  my $lang = $marc_record->field('040')->subfield('b');
+  if ($lang && $lang ne 'eng') {
+    say "\tREJECTED oclc $oclc_number - bad 040 \$b language: $lang";
+	$OK = 0;
+  }
   
   # Check 007/03 (speed, for sound recordings)
   # CDs should have 007/03 = f (1.4 m/sec)... TODO? but some have z (unknown), allow that too.
@@ -517,15 +524,6 @@ sub report_marc_problems {
   my $marc_record = shift;
   my $fld;
   my $sfd;
-
-  # 040 $b exists, but is not eng; both are not repeatable
-  $fld = $marc_record->field('040');
-  if ($fld) {
-    $sfd = $fld->subfield('b');
-	if ($sfd && $sfd ne 'eng') {
-      say "\t\tWARNING: 040 \$b = $sfd";
-	}
-  }
 
   # No 007 and/or 300 and/or 650
   say "\t\tWARNING: No 007 field" if not has_field($marc_record, qw(007));
