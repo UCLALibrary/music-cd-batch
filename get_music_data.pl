@@ -205,8 +205,8 @@ sub search_musicbrainz {
       say "\tMB Pubnum: $pub_num";
       #say "";
 	  %mb_data = ('title' => $title, 'artist' => $artist, 'pub_num' => $pub_num);
-      # Store a reference to the whole original JSON as well, for later use
-	  $mb_data{'json'} = $json;
+      # Store a reference to the whole original JSON for this release as well, for later use
+	  $mb_data{'json'} = $release;
 	}
   }
   return %mb_data;
@@ -778,6 +778,7 @@ sub create_marc_mb {
   my %data = @_;
   say "Creating MARC from MusicBrainz data for: ", $data{'title'};
   my $full_data = $data{'json'};
+  say Dumper($full_data);
   my $marc = create_marc_shared();
 
   # Update 008
