@@ -40,11 +40,11 @@ my $orig_marc_file = $upc_file . '_orig.mrc';
 
 # Read search terms from file, one search per line.
 my @lines = read_file($upc_file, chomp => 1);
-# Each line has 3 fields: search term (UPC or music pub number), accession number, and barcode.
+# Each line has 4 fields: search term (UPC or music pub number), accession number, barcode, and title.
 foreach my $line (@lines) {
   say "==============================";
-  my ($search_term, $accession, $barcode) = split("\t", $line);
-  say "Searching for: $search_term";
+  my ($search_term, $accession, $barcode, $official_title) = split("\t", $line);
+  say "Searching for: $search_term ($official_title)";
 
   # First, search Discogs and MusicBrainz for the given term.
   # Among other data, collect music publisher number(s) from those sources.
@@ -113,6 +113,7 @@ foreach my $line (@lines) {
   # Print artists & titles for comparison
   say "\tDC Title: " . $discogs_data{'title'} . " / " . $discogs_data{'artist'} if %discogs_data;;
   say "\tMB Title: " . $mb_data{'title'} . " / " . $mb_data{'artist'} if %mb_data;
+  say "\tOfficial: " . $official_title;
   say "";
 
   # Discogs and Musicbrainz have rate limits on their APIs
@@ -485,6 +486,7 @@ sub title_differs_too_much {
 	    $score = similarity(normalize($short_title), normalize($title));
 	  }
 	  if ($score < 0.4) {
+	    $score = sprintf("%.2f", $score);
 	    say "\tWarning: Titles are too different: $score";
 	    say "\t\tMARC Title : $marc_title (OCLC $oclc_number)";
 	    say "\t\tOther Title: $title";
@@ -496,11 +498,12 @@ sub title_differs_too_much {
   my $number_of_keys = scalar(keys %titles);
   if ($number_of_keys > 0) {
     my $average = $total_score / $number_of_keys;
+	$average = sprintf("%.2f", $average);
     if ($average < 0.37) {
       say "\t\tREJECTED OCLC $oclc_number: Titles are too different: $average";
       $too_different = 1;
     } else {
-      say "\tDEBUG: Average is $average";
+      say "\tDEBUG: Average is: $average";
     }
   }
 
