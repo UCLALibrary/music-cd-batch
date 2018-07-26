@@ -51,15 +51,15 @@ foreach my $line (@lines) {
   my %discogs_data = search_discogs($search_term);
   my %mb_data = search_musicbrainz($search_term);
 
-  #####my $marc_record = search_worldcat($search_term);
-  my @marc_records = search_worldcat($search_term);
+  # First WorldCat search is by UPC, using standard number index
+  my @marc_records = search_worldcat($search_term, 'srw.sn');
   # If initial search on UPC didn't find anything, try searching for
   # the music publisher numbers from Discogs/MusicBrainz.
   if (! @marc_records) {
 	my @search_terms = get_all_pub_numbers(\%discogs_data, \%mb_data);
 	if (@search_terms) {
 	  say "Searching WorldCat again for music publisher numbers... ", join(", ", @search_terms);
-      @marc_records = search_worldcat(\@search_terms);
+      @marc_records = search_worldcat(\@search_terms, 'srw.mn');
 	}
   }
 
@@ -218,12 +218,12 @@ sub search_musicbrainz {
 # using the OCLC WorldCat Search API.
 # WorldCat API key included above.
 sub search_worldcat {
-  my $search_terms_ref = shift;
+  my ($search_terms_ref, $index) = @_;
   my $oclc = UCLA::Worldcat::WSAPI->new(WSKEY);
-  # TODO: Experiment with number of records - default is 10
   $oclc->max_records(20);
 
-  my @marc_records = $oclc->search_sru_sn($search_terms_ref);
+  #my @marc_records = $oclc->search_sru_sn($search_terms_ref);
+  my @marc_records = $oclc->search_sru($search_terms_ref, $index);
   say "Found MARC records: " . scalar(@marc_records);
 
   # Evaluate MARC records, rejecting unsuitable ones, returning the one best remaining one (or none if all get rejected)
