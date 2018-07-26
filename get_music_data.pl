@@ -596,8 +596,8 @@ sub add_local_fields {
   $marc_record->insert_fields_ordered($fld910);
 
   # Add 948 field: 
-  # From OCLC: 948 ## $a cmc $b meherbatch $c [yyyymmdd] $d 1 
-  # Original : 948 ## $a cmc $b meherbatch $c [yyyymmdd] $d 3 $k meherbatch 
+  # From OCLC: 948 ## $a cmc $b meherbatch $c [yyyymmdd] $d 1 $k batchcat 
+  # Original : 948 ## $a cmc $b meherbatch $c [yyyymmdd] $d 3 $k meherbatch $k batchcat
   # Note date in $c is yyyymmdd; prepend 20, won't care by 2100....
   my $fld948 = MARC::Field->new('948', ' ', ' ',
     'a' => 'cmc',
@@ -605,10 +605,11 @@ sub add_local_fields {
 	'c' => '20' . get_yymmdd()
   );
   # Check 001 to decide if OCLC record, via hacky 001 added in create_marc_shared();
+  # Add $k batchcat to all, along with meherorig in original records.
   if ($marc_record->field('001')->data() =~ /ocm00000NEW/) {
-    $fld948->add_subfields('d' => '3', 'k' => 'meherorig');
+    $fld948->add_subfields('d' => '3', 'k' => 'meherorig', 'k' => 'batchcat');
   } else {
-    $fld948->add_subfields('d' => '1');
+    $fld948->add_subfields('d' => '1', 'k' => 'batchcat');
   }
 
   $marc_record->insert_fields_ordered($fld948);
@@ -625,6 +626,9 @@ sub create_marc_shared {
   $marc->leader('00000njm a22003373i 4500');
   # TODO: Placeholder 001 field
   $marc->append_fields(MARC::Field->new('001', 'ocm00000NEW'));
+  # Create 005 timestamp for start of today
+  my $f005_timestamp = '20' . get_yymmdd() . '000000.0';
+  $marc->append_fields(MARC::Field->new('005', $f005_timestamp));
   $marc->append_fields(MARC::Field->new('007', 'sd fungnn|||eu'));
   $marc->append_fields(MARC::Field->new('008', get_yymmdd() . 's        xx   nn           n zxx d'));
 
