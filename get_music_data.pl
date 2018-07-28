@@ -44,7 +44,7 @@ my @lines = read_file($upc_file, chomp => 1);
 foreach my $line (@lines) {
   say "==============================";
   my ($search_term, $accession, $barcode, $official_title) = split("\t", $line);
-  say "Searching for: $search_term ($official_title)";
+  say "$accession: Searching for: $search_term ($official_title)";
 
   # First, search Discogs and MusicBrainz for the given term.
   # Among other data, collect music publisher number(s) from those sources.
@@ -74,6 +74,7 @@ foreach my $line (@lines) {
   my @titles = ();
   push (@titles, $discogs_data{'title'}) if %discogs_data;
   push (@titles, $mb_data{'title'}) if %mb_data;
+  push (@titles, $official_title);
 
   # Make sure this is reset for every iteration
   my $marc_record; 
@@ -785,7 +786,6 @@ sub create_marc_mb {
   my %data = @_;
   say "Creating MARC from MusicBrainz data for: ", $data{'title'};
   my $full_data = $data{'json'};
-  say Dumper($full_data);
   my $marc = create_marc_shared();
 
   # Update 008
@@ -948,15 +948,11 @@ sub get_all_pub_numbers {
   }
 
   # MusicBrainz data
-  # JSON contains all releases, though we only used the first for artist/title info elsewhere.
-  foreach my $release (@{$mb_json->{'releases'}}) {
-    foreach my $label (@{$release->{'label-info'}}) {
-      my $pub_num = $label->{'catalog-number'};
-	  $pub_numbers{normalize_pub_num($pub_num)} = 1 if $pub_num;
-	}
+  foreach my $label (@{$mb_json->{'label-info'}}) {
+    my $pub_num = $label->{'catalog-number'};
+    $pub_numbers{normalize_pub_num($pub_num)} = 1 if $pub_num;
   }
 
-#say Dumper(%pub_numbers);
   # Return just the keys - the unique pub numbers
   return (keys %pub_numbers);
 }
