@@ -708,13 +708,13 @@ sub create_marc_discogs {
 	my $name = $label->{'name'};
 	if ($catno && $catno ne 'none') {
 	  # De-dup on catno, via hash; name might not exist
-	  $catnos{$catno} = $name;
+	  $catnos{normalize($catno)} = [$catno, $name];
 	}
   }
   # Now go through the hash, creating an 028 for each one remaining
   foreach my $catno (keys %catnos) {
-    $fld = MARC::Field->new('028', '0', '2', 'a' => $catno);
-    $fld->add_subfields('b', $catnos{$catno}) if $catnos{$catno};
+    $fld = MARC::Field->new('028', '0', '2', 'a' => $catnos{$catno}[0]);
+    $fld->add_subfields('b', $catnos{$catno}[1]) if $catnos{$catno};
     $marc->insert_fields_ordered($fld);
   }
 
@@ -813,13 +813,13 @@ sub create_marc_mb {
 	my $name = $label->{'label'}->{'name'};
 	if ($catno) {
 	  # De-dup on catno, via hash; name might not exist
-	  $catnos{$catno} = $name;
+	  $catnos{normalize($catno)} = [$catno, $name];
 	}
   }
   # Now go through the hash, creating an 028 for each one remaining
   foreach my $catno (keys %catnos) {
-    $fld = MARC::Field->new('028', '0', '2', 'a' => $catno);
-	$fld->add_subfields('b', $catnos{$catno}) if $catnos{$catno};
+	$fld = MARC::Field->new('028', '0', '2', 'a' => $catnos{$catno}[0]);
+	$fld->add_subfields('b', $catnos{$catno}[1]) if $catnos{$catno};
     $marc->insert_fields_ordered($fld);
   }
 
