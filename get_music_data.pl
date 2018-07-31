@@ -51,8 +51,17 @@ foreach my $line (@lines) {
   my %discogs_data = search_discogs($search_term);
   my %mb_data = search_musicbrainz($search_term);
 
+  my @titles = ();
+  push (@titles, $discogs_data{'title'}) if %discogs_data;
+  push (@titles, $mb_data{'title'}) if %mb_data;
+  push (@titles, $official_title);
+
   # First WorldCat search is by UPC, using standard number index
   my @marc_records = search_worldcat($search_term, 'srw.sn');
+
+  # Remove unwanted records to see if we should proceed with a music pub number search
+  @marc_records = remove_unsuitable_records(\@marc_records, \@titles);
+
   # If initial search on UPC didn't find anything, try searching for
   # the music publisher numbers from Discogs/MusicBrainz.
   if (! @marc_records) {
@@ -70,11 +79,6 @@ foreach my $line (@lines) {
 	say "ERROR: Pull CD for review: $accession";
 	next;
   }
-
-  my @titles = ();
-  push (@titles, $discogs_data{'title'}) if %discogs_data;
-  push (@titles, $mb_data{'title'}) if %mb_data;
-  push (@titles, $official_title);
 
   # Make sure this is reset for every iteration
   my $marc_record; 
