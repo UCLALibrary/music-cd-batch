@@ -685,7 +685,13 @@ sub create_marc_discogs {
   # Update 008
   my $fld008 = $marc->field('008');
   my $fld008_data = $fld008->data();
-  substr($fld008_data, 7, 4) = substr($full_data->{'released'}, 0, 4) if $full_data->{'released'};
+  # If date, set 008/07-10; otherwise, set 008/06 and 008/07-14
+  if ($full_data->{'released'}) {
+    substr($fld008_data, 7, 4) = substr($full_data->{'released'}, 0, 4);
+  } else {
+    substr($fld008_data, 6, 9) = 'nuuuuuuuu';
+  }
+  # Set language - always unknown from Discogs
   substr($fld008_data, 35, 3) = 'zxx';
   $fld008->update($fld008_data);
 
@@ -795,7 +801,13 @@ sub create_marc_mb {
   # Update 008
   my $fld008 = $marc->field('008');
   my $fld008_data = $fld008->data();
-  substr($fld008_data, 7, 4) = substr($full_data->{'date'}, 0, 4) if $full_data->{'date'};
+  # If date, set 008/07-10; otherwise, set 008/06 and 008/07-14
+  if ($full_data->{'date'}) {
+    substr($fld008_data, 7, 4) = substr($full_data->{'date'}, 0, 4);
+  } else {
+    substr($fld008_data, 6, 9) = 'nuuuuuuuu';
+  }
+  # Get language - only if it's English
   my $lang = $full_data->{'text-representation'}->{'language'} if $full_data->{'text-representation'}->{'language'};
   substr($fld008_data, 35, 3) = 'eng' if $lang eq 'eng';
   $fld008->update($fld008_data);
