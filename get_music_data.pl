@@ -583,6 +583,10 @@ sub has_field {
 sub add_local_fields {
   my ($marc_record, $accession, $barcode) = @_;
 
+  # Create 005 timestamp for start of today
+  my $f005_timestamp = '20' . get_yymmdd() . '000000.0';
+  $marc_record->append_fields(MARC::Field->new('005', $f005_timestamp));
+
   # Add 049 field: 049 ## $a CLUV $o muclsdsdr $p {SPAC} $l {barcode} 
   my $fld049 = MARC::Field->new('049', ' ', ' ', 
     'a' => 'CLUV',
