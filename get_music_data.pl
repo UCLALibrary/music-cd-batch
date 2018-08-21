@@ -76,7 +76,7 @@ foreach my $line (@lines) {
   # and exit this iteration: we don't want to add any dup, from any source.
   if (any_record_has_clu(\@marc_records)) {
     # Error message was printed in routine; add more info here
-	say "ERROR: Pull CD for review: $accession";
+	say "Pull CD for review [held by CLU]: $accession ($official_title)";
 	next;
   }
 
@@ -88,7 +88,10 @@ foreach my $line (@lines) {
   if ($marc_record) {
 	say "";
     say "\tBest record: " . $marc_record->oclc_number();
-	report_marc_problems($marc_record);
+	my $warning_count = report_marc_problems($marc_record);
+	if ($warning_count > 0) {
+	  say "Pull CD for review [$warning_count MARC warning(s)]: $accession ($official_title)";
+	}
 	$marc_record = add_local_fields($marc_record, $accession, $barcode);
 
 	save_marc($marc_record, $oclc_marc_file);
@@ -104,14 +107,16 @@ foreach my $line (@lines) {
 	  $marc_record = create_marc_discogs(%discogs_data);
 	  $marc_record = add_local_fields($marc_record, $accession, $barcode);
 	  save_marc($marc_record, $orig_marc_file);
+	  say "Pull CD for review [original record created]: $accession ($official_title)";
 	} elsif (%mb_data) {
 	  $marc_record = create_marc_mb(%mb_data);
 	  $marc_record = add_local_fields($marc_record, $accession, $barcode);
 	  save_marc($marc_record, $orig_marc_file);
+	  say "Pull CD for review [original record created]: $accession ($official_title)";
 	}
 	else {
 	  say "MARC not created: no data available";
-	  say "ERROR: Pull CD for review: $accession";
+	  say "Pull CD for review [no record created]: $accession ($official_title)";
 	}
   }
 
@@ -532,33 +537,63 @@ sub report_marc_problems {
   my $marc_record = shift;
   my $fld;
   my $sfd;
+  my $warning_count = 0; # Increment below as warnings occur
 
-  # No 007 and/or 300 and/or 650
-  say "\t\tWARNING: No 007 field" if not has_field($marc_record, qw(007));
-  say "\t\tWARNING: No 300 field" if not has_field($marc_record, qw(300));
-  say "\t\tWARNING: No 650 field" if not has_field($marc_record, qw(650));
+  # No 007
+  if (! has_field($marc_record, qw(007))) {
+    say "\t\tWARNING: No 007 field";
+	$warning_count++;
+  }
+
+  # No 300
+  if (! has_field($marc_record, qw(300))) {
+    say "\t\tWARNING: No 300 field";
+	$warning_count++;
+  }
+
+  # No 650
+  if (! has_field($marc_record, qw(650))) {
+    say "\t\tWARNING: No 650 field";
+	$warning_count++;
+  }
 
   # None of 100/110/700/710 name fields
-  say "\t\tWARNING: No 100/110/700/710 fields" if not has_field($marc_record, qw(100 110 700 710));
+  if (! has_field($marc_record, qw(100 110 700 710))) {
+    say "\t\tWARNING: No 100/110/700/710 fields";
+	$warning_count++;
+  }
 
   # None of 260/264 publisher fields
-  say "\t\tWARNING: No 260/264 fields" if not has_field($marc_record, qw(260 264));
+  if (! has_field($marc_record, qw(260 264))) {
+    say "\t\tWARNING: No 260/264 fields";
+	$warning_count++;
+  }
 
   # None of 500/505/511/518 note fields
-  say "\t\tWARNING: No 500/505/511/518 fields" if not has_field($marc_record, qw(500 505 511 518));
+  if (! has_field($marc_record, qw(500 505 511 518))) {
+    say "\t\tWARNING: No 500/505/511/518 fields";
+	$warning_count++;
+  }
 
   # 245 $n or 490 $v exists, meaning it's probably a multi-CD set
   $fld = $marc_record->field('245');
   if ($fld) {
     $sfd = $fld->subfield('n');
-    say "\t\tWARNING: 245 \$n = $sfd" if $sfd;
+	if ($sfd) {
+      say "\t\tWARNING: 245 \$n = $sfd";
+	  $warning_count++;
+	}
   }
   $fld = $marc_record->field('490');
   if ($fld) {
     $sfd = $fld->subfield('v');
-    say "\t\tWARNING: 490 \$v = $sfd" if $sfd;
+	if ($sfd) {
+      say "\t\tWARNING: 490 \$v = $sfd";
+	  $warning_count++;
+	}
   }
 
+  return $warning_count;
 }
 
 ##############################
