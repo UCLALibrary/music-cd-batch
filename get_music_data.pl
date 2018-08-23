@@ -575,15 +575,7 @@ sub report_marc_problems {
 	$warning_count++;
   }
 
-  # 245 $n or 490 $v exists, meaning it's probably a multi-CD set
-  $fld = $marc_record->field('245');
-  if ($fld) {
-    $sfd = $fld->subfield('n');
-	if ($sfd) {
-      say "\t\tWARNING: 245 \$n = $sfd";
-	  $warning_count++;
-	}
-  }
+  # 490 $v exists, meaning it's probably a multi-CD set
   $fld = $marc_record->field('490');
   if ($fld) {
     $sfd = $fld->subfield('v');
