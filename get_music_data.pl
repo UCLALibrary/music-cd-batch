@@ -580,8 +580,8 @@ sub report_marc_problems {
   if ($fld) {
     $sfd = $fld->subfield('v');
 	if ($sfd) {
+	  # Print warning, but do NOT increment warning_count to trigger this on the pull list later
       say "\t\tWARNING: 490 \$v = $sfd";
-	  $warning_count++;
 	}
   }
 
