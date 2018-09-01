@@ -401,6 +401,9 @@ sub get_best_record {
   my $lang2 = $record2->field('040')->subfield('b');
   $score1 += score_040b($lang1);
   $score2 += score_040b($lang2);
+  # Make these printable, if undefined
+  $lang1 = "none" if not $lang1;
+  $lang2 = "none" if not $lang2;
   if ($score1 > $score2) {
     say "\t\tLanguage: * $lang1 > $lang2";
   } elsif ($score2 > $score1) {
