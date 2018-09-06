@@ -7,6 +7,7 @@ use LWP::UserAgent;
 use MARC::File::XML (BinaryEncoding => 'utf8', RecordFormat => 'MARC21');
 use MARC::Batch;
 use String::Similarity qw(similarity);
+use String::Util qw(trim);
 use feature qw(say);
 use strict;
 use warnings;
@@ -48,6 +49,8 @@ foreach my $line (@lines) {
 
   # First, search Discogs and MusicBrainz for the given term.
   # Among other data, collect music publisher number(s) from those sources.
+  # Remove rogue spaces from UPC for searching!
+  $search_term = trim($search_term);
   my %discogs_data = search_discogs($search_term);
   my %mb_data = search_musicbrainz($search_term);
 
