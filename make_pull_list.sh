@@ -28,3 +28,6 @@ printf "%3d\tOCLC records with warnings\n" ${WARN_CNT} >> ${PULL_LIST}
 printf "%3d\tTotal to pull\n" ${TOTAL} >> ${PULL_LIST}
 
 tail -5 ${PULL_LIST}
+
+# Display MARC counts, for convenience, but don't add to the pull list
+for MRC in *.mrc; do marcsplit -c ${MRC}; done
