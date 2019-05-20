@@ -45,6 +45,8 @@ my @lines = read_file($upc_file, chomp => 1);
 foreach my $line (@lines) {
   say "==============================";
   my ($search_term, $accession, $barcode, $official_title) = split("\t", $line);
+  # Barcodes should always be upper-case
+  $barcode = uc($barcode);
   say "$accession: Searching for: $search_term ($official_title)";
 
   # First, search Discogs and MusicBrainz for the given term.
