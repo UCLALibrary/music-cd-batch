@@ -1,7 +1,7 @@
-# voyager-local-music-cd
+# music-cd-batch
 Programs for Music CD batch processing
 
-### Usage (preliminary internal notes)
+### Usage (obsolete - internal notes from old process)
 1. Copy/paste data from Google sheet prepared by music library.  Make sure all lines make it - vi deletes some with special characters.
 2. Data should be in file named like this, same as the sheet of data used: batch_012_20181019.lst
 3. Check for duplicate barcodes: ./find_dup_barcodes.sh upc_file.lst
@@ -13,4 +13,3 @@ Programs for Music CD batch processing
 9. Run: check_meher_log.bat on the log file from the load in the previous step
 10. Put all in K:\WorkGroups\Meher CDs\
 11. On the server: Move batch* done/
-
