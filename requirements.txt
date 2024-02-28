@@ -4,3 +4,5 @@ bookops-worldcat==0.5.0
 python3-discogs-client==2.7
 # For Musicbrainz
 musicbrainzngs==0.7.1 
+# For MARC records
+pymarc==5.1.2 
