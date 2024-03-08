@@ -8,14 +8,22 @@ musicbrainzngs.set_useragent(
 )
 
 
-def search_musicbrainz_by_upc(upc: str) -> dict:
+def search_musicbrainz_by_upc(upc: str) -> list:
     """Search MusicBrainz for releases by UPC. Returns a list of release dictionaries.
-    Each dictionary contains title, artist, publisher_number, and full_json."""
-    # MusicBrainz calls UPCs "barcodes"s
-    # To match both CDs and UPCs precisely, use strict=True
+    To match both CDs and UPCs precisely, use strict=True
+    MusicBrainz calls UPCs "barcode"s.
+    """
     result = musicbrainzngs.search_releases(barcode=upc, format="CD", strict=True)
+    return result["release-list"]
+
+
+def parse_musicbrainz_data(data: list) -> list:
+    """Parse MusicBrainz list of releases to pull out data for future use.
+    Each dictionary contains title, artist, publisher_number, and full_json of the
+    original response.
+    """
     output_dict_list = []
-    for release in result["release-list"]:
+    for release in data:
         release_dict = {
             "title": release["title"],
             "artist": release["artist-credit-phrase"],
