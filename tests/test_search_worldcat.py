@@ -1,23 +1,17 @@
 import json
 import unittest
-from api_keys import (
-    WORLDCAT_METADATA_CLIENT_ID,
-    WORLDCAT_METADATA_CLIENT_SECRET,
-    WORLDCAT_PRINCIPAL_ID,
-    WORLDCAT_PRINCIPAL_IDNS,
-)
 from searchers.worldcat import WorldcatClient
 
 
 class TestSearchWorldcat(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Create client for testing
+        # Create client for testing; fake values, only for initialization
         cls.worldcat_client = WorldcatClient(
-            WORLDCAT_METADATA_CLIENT_ID,
-            WORLDCAT_METADATA_CLIENT_SECRET,
-            WORLDCAT_PRINCIPAL_ID,
-            WORLDCAT_PRINCIPAL_IDNS,
+            "fake_client_id",
+            "fake_client_secret",
+            "fake_principal_id",
+            "fake_principal_idns",
         )
         # Load sample data for use by all tests.
         # Dict of dicts, keyed on UPC code, with real (as of 2024-03-12) response data.
@@ -38,12 +32,12 @@ class TestSearchWorldcat(unittest.TestCase):
 class TestMarcXmlConversion(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Create client for testing
+        # Create client for testing; fake values, only for initialization
         cls.worldcat_client = WorldcatClient(
-            WORLDCAT_METADATA_CLIENT_ID,
-            WORLDCAT_METADATA_CLIENT_SECRET,
-            WORLDCAT_PRINCIPAL_ID,
-            WORLDCAT_PRINCIPAL_IDNS,
+            "fake_client_id",
+            "fake_client_secret",
+            "fake_principal_id",
+            "fake_principal_idns",
         )
 
     def test_xml_to_binary_marc(self):

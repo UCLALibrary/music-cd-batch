@@ -38,6 +38,7 @@ are installed in the container.
    # Run the program (TODO: Update program name(s))
    $ docker-compose exec batchcd python search_worldcat.py batch_016_20240229.tsv
    ```
+4. Some data sources require API keys. Get a copy of `api_keys.py` from a teammate and put it in the top level directory of the project.
 
 ### Testing
 
