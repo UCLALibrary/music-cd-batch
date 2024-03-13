@@ -12,9 +12,11 @@ oclc_test
 *.json
 *.mrc
 *.xml
+
 # But allow them in sample data directory for tests.
 !tests/sample_data/*.json
 !tests/sample_data/*.mrc
+!tests/sample_data/*.tsv
 !tests/sample_data/*.xml
 
 # Exclude logs and other output
