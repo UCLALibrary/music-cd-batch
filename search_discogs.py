@@ -24,7 +24,9 @@ def get_full_discogs_releases(release_ids: list) -> list:
     )
     for release_id in release_ids:
         release = discogs.release(release_id)
-        output_list.append(release)
+        # force the release to refresh to get full data
+        release.refresh()
+        output_list.append(release.data)
     return output_list
 
 
@@ -35,15 +37,15 @@ def parse_discogs_data(release_list: list) -> list:
     """
     output_dict_list = []
     for release in release_list:
-        title = release.title
-        publisher_number = release.labels[0].catno
-        artist = " , ".join([artist.name for artist in release.artists])
+        title = release["title"]
+        publisher_number = release["labels"][0]["catno"]
+        artist = ", ".join([artist["name"] for artist in release["artists"]])
 
         release_dict = {
             "title": title,
             "artist": artist,
             "publisher_number": publisher_number,
-            "full_json": release.data,
+            "full_json": release,
         }
 
         output_dict_list.append(release_dict)
