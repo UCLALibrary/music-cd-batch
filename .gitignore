@@ -1,17 +1,27 @@
 # Exclude API keys
-api_keys.pl
+api_keys.*
 
 # Exclude test directories
 oclc_test
 
 # Exclude lists of search terms
 *.lst
+*.tsv
 
 # Exclude files of MARC records and any transient XML/JSON files
+*.json
 *.mrc
 *.xml
-*.json
+
+# But allow them in sample data directory for tests.
+!tests/sample_data/*.json
+!tests/sample_data/*.mrc
+!tests/sample_data/*.tsv
+!tests/sample_data/*.xml
 
 # Exclude logs and other output
 *.log
 *.out
+
+# Cache files
+__pycache__

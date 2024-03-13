@@ -1,0 +1,147 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<entry xmlns="http://www.w3.org/2005/Atom">
+  <content type="application/xml">
+    <response xmlns="http://worldcat.org/rb" mimeType="application/vnd.oclc.marc21+xml">
+      <record xmlns="http://www.loc.gov/MARC21/slim">
+        <leader>00000cjm a2200000Ma 4500</leader>
+        <controlfield tag="001">on1011080915</controlfield>
+        <controlfield tag="003">OCoLC</controlfield>
+        <controlfield tag="005">20240127100239.6</controlfield>
+        <controlfield tag="007">sd fsngnnmmneu</controlfield>
+        <controlfield tag="008">101028r20101989xx rcnn           n eng d</controlfield>
+        <datafield tag="040" ind1=" " ind2=" ">
+          <subfield code="a">ILM</subfield>
+          <subfield code="b">eng</subfield>
+          <subfield code="c">ILM</subfield>
+          <subfield code="d">OCLCQ</subfield>
+          <subfield code="d">OCLCO</subfield>
+          <subfield code="d">OCLCF</subfield>
+          <subfield code="d">OCLCO</subfield>
+          <subfield code="d">OCLCL</subfield>
+    </datafield>
+        <datafield tag="024" ind1="7" ind2=" ">
+          <subfield code="a">00602527567730</subfield>
+          <subfield code="2">gtin-14</subfield>
+    </datafield>
+        <datafield tag="024" ind1="1" ind2=" ">
+          <subfield code="a">602527567730</subfield>
+    </datafield>
+        <datafield tag="028" ind1="0" ind2="2">
+          <subfield code="a">B001509902</subfield>
+          <subfield code="b">UMD</subfield>
+    </datafield>
+        <datafield tag="035" ind1=" " ind2=" ">
+          <subfield code="a">(OCoLC)1011080915</subfield>
+    </datafield>
+        <datafield tag="050" ind1=" " ind2="4">
+          <subfield code="a">M1630.18.N55</subfield>
+          <subfield code="b">P74 2010</subfield>
+    </datafield>
+        <datafield tag="082" ind1="0" ind2="4">
+          <subfield code="a">782.42166</subfield>
+          <subfield code="2">22</subfield>
+    </datafield>
+        <datafield tag="049" ind1=" " ind2=" ">
+          <subfield code="a">CLUM</subfield>
+    </datafield>
+        <datafield tag="110" ind1="2" ind2=" ">
+          <subfield code="a">Nine Inch Nails (Musical group)</subfield>
+    </datafield>
+        <datafield tag="245" ind1="1" ind2="0">
+          <subfield code="a">Pretty hate machine /</subfield>
+          <subfield code="c">Nine Inch Nails.</subfield>
+    </datafield>
+        <datafield tag="260" ind1=" " ind2=" ">
+          <subfield code="a">[Place of publication not identified] :</subfield>
+          <subfield code="b">UMD,</subfield>
+          <subfield code="c">2010.</subfield>
+    </datafield>
+        <datafield tag="300" ind1=" " ind2=" ">
+          <subfield code="a">1 audio disc :</subfield>
+          <subfield code="b">digital ;</subfield>
+          <subfield code="c">4 3/4 in.</subfield>
+    </datafield>
+        <datafield tag="336" ind1=" " ind2=" ">
+          <subfield code="a">performed music</subfield>
+          <subfield code="b">prm</subfield>
+          <subfield code="2">rdacontent</subfield>
+    </datafield>
+        <datafield tag="337" ind1=" " ind2=" ">
+          <subfield code="a">audio</subfield>
+          <subfield code="b">s</subfield>
+          <subfield code="2">rdamedia</subfield>
+    </datafield>
+        <datafield tag="338" ind1=" " ind2=" ">
+          <subfield code="a">audio disc</subfield>
+          <subfield code="b">sd</subfield>
+          <subfield code="2">rdacarrier</subfield>
+    </datafield>
+        <datafield tag="500" ind1=" " ind2=" ">
+          <subfield code="a">Title from sell sheet.</subfield>
+    </datafield>
+        <datafield tag="500" ind1=" " ind2=" ">
+          <subfield code="a">Tracks 1-10 originally released in 1989.</subfield>
+    </datafield>
+        <datafield tag="500" ind1=" " ind2=" ">
+          <subfield code="a">Compact disc.</subfield>
+    </datafield>
+        <datafield tag="505" ind1="0" ind2=" ">
+          <subfield code="a">Head like a hole -- Terrible lie -- Down in it -- Sanctified -- Something I can never have -- Kinda I want to -- Sin -- That's what I get -- The only time -- Ringfinger. Bonus track: Get down, make love.</subfield>
+    </datafield>
+        <datafield tag="511" ind1="0" ind2=" ">
+          <subfield code="a">Nine Inch Nails: Trent Reznor ; with acc.</subfield>
+    </datafield>
+        <datafield tag="650" ind1=" " ind2="0">
+          <subfield code="a">Rock music</subfield>
+          <subfield code="y">1991-2000.</subfield>
+    </datafield>
+        <datafield tag="650" ind1=" " ind2="0">
+          <subfield code="a">Alternative rock music.</subfield>
+    </datafield>
+        <datafield tag="650" ind1=" " ind2="0">
+          <subfield code="a">Industrial music.</subfield>
+    </datafield>
+        <datafield tag="650" ind1=" " ind2="6">
+          <subfield code="a">Rock (Musique)</subfield>
+          <subfield code="y">1991-2000.</subfield>
+    </datafield>
+        <datafield tag="650" ind1=" " ind2="6">
+          <subfield code="a">Rock alternatif.</subfield>
+    </datafield>
+        <datafield tag="650" ind1=" " ind2="6">
+          <subfield code="a">Musique industrielle.</subfield>
+    </datafield>
+        <datafield tag="650" ind1=" " ind2="7">
+          <subfield code="a">Alternative rock music.</subfield>
+          <subfield code="2">fast</subfield>
+          <subfield code="0">(OCoLC)fst00806181</subfield>
+    </datafield>
+        <datafield tag="650" ind1=" " ind2="7">
+          <subfield code="a">Industrial music.</subfield>
+          <subfield code="2">fast</subfield>
+          <subfield code="0">(OCoLC)fst00971386</subfield>
+    </datafield>
+        <datafield tag="650" ind1=" " ind2="7">
+          <subfield code="a">Rock music.</subfield>
+          <subfield code="2">fast</subfield>
+          <subfield code="0">(OCoLC)fst01099204</subfield>
+    </datafield>
+        <datafield tag="648" ind1=" " ind2="7">
+          <subfield code="a">1991-2000</subfield>
+          <subfield code="2">fast</subfield>
+    </datafield>
+        <datafield tag="700" ind1="1" ind2=" ">
+          <subfield code="a">Reznor, Trent.</subfield>
+    </datafield>
+        <datafield tag="758" ind1=" " ind2=" ">
+          <subfield code="i">has work:</subfield>
+          <subfield code="a">Pretty hate machine (Music)</subfield>
+          <subfield code="1">https://id.oclc.org/worldcat/entity/E39PCFYK4cMd9rPGBG6qyHcJTb</subfield>
+          <subfield code="4">https://id.oclc.org/worldcat/ontology/hasWork</subfield>
+    </datafield>
+  </record>
+    </response>
+  </content>
+  <id>http://worldcat.org/oclc/1011080915</id>
+  <link href="http://worldcat.org/oclc/1011080915"/>
+</entry>
