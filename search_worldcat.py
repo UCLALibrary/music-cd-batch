@@ -46,7 +46,7 @@ def main() -> None:
     )
 
     # TEMPORARY
-    print("TESTING TRUE: ", worldcat_client.is_held_by("28745774"))
+    # print("TESTING TRUE: ", worldcat_client.is_held_by("28745774"))
 
     # TODO: Remove range, used to test small subset of batch_016_20240229.tsv
     for row in music_data[6:10]:

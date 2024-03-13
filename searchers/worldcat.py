@@ -53,6 +53,7 @@ class WorldcatClient:
 
     def search_worldcat(self, search_term: str, search_index: str) -> dict:
         """Search Worldcat via Bookops implementation of OCLC's Metadata API /search/brief-bibs.
+
         Return dict with search results.
         """
         query = f"{search_index}:{search_term}"
@@ -73,18 +74,44 @@ class WorldcatClient:
             ]
         return oclc_numbers
 
+    def get_worldcat_xml(self, oclc_number: str) -> bytes:
+        """Retrieve full MARC XML record from Worldcat, using Bookops implementation of OCLC's
+        Metadata (1.0) API /bib/data.
+
+        Return bytes (containing XML) as that's what the API returns
+        """
+        with MetadataSession(authorization=self.token) as session:
+            response = session.get_full_bib(oclc_number)
+            # TEMPORARY: Dump XML to file for manual review.
+            # with open(f"{oclc_number}.xml", "wb") as f:
+            #     f.write(response.content)
+            return response.content
+
+    def convert_xml_to_marc(self, xml: bytes) -> Record:
+        """Convert MARC XML from Worldcat to a pymarc Record object.
+
+        Return pymarc.Record
+        """
+        # Convert bytes to file-like object for pymarc's parse_xml_to_array
+        data = BytesIO(xml)
+        # pymarc.parse_xml_to_array can handle XML with multiple records, so it returns a list;
+        # return only the first record, though there should only be one from Worldcat anyhow.
+        return parse_xml_to_array(data)[0]
+
     def get_worldcat_records(self, oclc_numbers: list) -> list[Record]:
         """Retrieve full MARC records from Worldcat, using Bookops implementation of OCLC's
         Metadata (1.0) API /bib/data and pymarc's XML -> MARC conversion.
+
         Return list of MARC records, or empty list if no records found.
         """
         records = []
-        with MetadataSession(authorization=self.token) as session:
-            for oclc_number in oclc_numbers:
-                response = session.get_full_bib(oclc_number)
-                data = BytesIO(response.content)
-                bib = parse_xml_to_array(data)[0]
-                records.append(bib)
+        for oclc_number in oclc_numbers:
+            xml = self.get_worldcat_xml(oclc_number)
+            bib = self.convert_xml_to_marc(xml)
+            # TEMPORARY: Dump binary marc record to file for manual review.
+            # with open(f"{oclc_number}.mrc", "wb") as f:
+            #     f.write(bib.as_marc21())
+            records.append(bib)
         return records
 
     def is_held_by(self, oclc_number: str, oclc_symbol: str = "CLU") -> bool:

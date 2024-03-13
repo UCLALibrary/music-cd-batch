@@ -9,9 +9,13 @@ oclc_test
 *.tsv
 
 # Exclude files of MARC records and any transient XML/JSON files
+*.json
 *.mrc
 *.xml
-*.json
+# But allow them in sample data directory for tests.
+!tests/sample_data/*.json
+!tests/sample_data/*.mrc
+!tests/sample_data/*.xml
 
 # Exclude logs and other output
 *.log
