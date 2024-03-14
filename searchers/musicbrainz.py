@@ -25,7 +25,7 @@ class MusicbrainzClient:
             )
         return self._client
 
-    def search_musicbrainz_by_upc(self, upc: str) -> list:
+    def search_by_upc(self, upc: str) -> list:
         """Search MusicBrainz for releases by UPC. Returns a list of release dictionaries.
         To match both CDs and UPCs precisely, use strict=True
         MusicBrainz calls UPCs "barcode"s.
@@ -33,7 +33,7 @@ class MusicbrainzClient:
         result = self.client.search_releases(barcode=upc, format="CD", strict=True)
         return result["release-list"]
 
-    def parse_musicbrainz_data(self, data: list) -> list:
+    def parse_data(self, data: list) -> list:
         """Parse MusicBrainz list of releases to pull out data for future use.
         Each dictionary contains title, artist, publisher_number, and full_json of the
         original response.

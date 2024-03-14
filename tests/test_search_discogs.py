@@ -14,7 +14,7 @@ class TestSearchDiscogs(unittest.TestCase):
             cls.data = json.load(f)
 
     def test_parse_discogs_data_one_result(self):
-        result = self.discogs_client.parse_discogs_data([self.data])
+        result = self.discogs_client.parse_data([self.data])
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["title"], "Lincoln")
@@ -24,5 +24,5 @@ class TestSearchDiscogs(unittest.TestCase):
 
     def test_parse_discogs_data_no_result(self):
         # get_full_discogs_releases returns an empty list if no results
-        result = self.discogs_client.parse_discogs_data([])
+        result = self.discogs_client.parse_data([])
         self.assertEqual(result, [])

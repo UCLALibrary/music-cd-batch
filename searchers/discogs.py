@@ -24,7 +24,7 @@ class DiscogsClient:
             self._client = Client(user_agent=self._user_agent, user_token=self._token)
         return self._client
 
-    def get_discogs_ids_by_upc(self, upc: str) -> list:
+    def get_ids_by_upc(self, upc: str) -> list:
         """Search Discogs for releases by UPC.
         Returns a list of IDs to use to get full release data.
         """
@@ -32,7 +32,7 @@ class DiscogsClient:
         release_ids = [result.id for result in search_results]
         return release_ids
 
-    def get_full_discogs_releases(self, release_ids: list) -> list:
+    def get_full_releases(self, release_ids: list) -> list:
         """Get full release data from Discogs by release ID."""
         output_list = []
         for release_id in release_ids:
@@ -42,7 +42,7 @@ class DiscogsClient:
             output_list.append(release.data)
         return output_list
 
-    def parse_discogs_data(self, release_list: list) -> list:
+    def parse_data(self, release_list: list) -> list:
         """Parse Discogs list of releases to pull out data for future use.
         Each dictionary contains title, artist, publisher_number, and full_json of the
         original response.

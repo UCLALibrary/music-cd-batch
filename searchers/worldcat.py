@@ -51,7 +51,7 @@ class WorldcatClient:
             self._set_authentication_token()
         return self._token
 
-    def search_worldcat(self, search_term: str, search_index: str) -> dict:
+    def search(self, search_term: str, search_index: str) -> dict:
         """Search Worldcat via Bookops implementation of OCLC's Metadata API /search/brief-bibs.
 
         Return dict with search results.
@@ -74,7 +74,7 @@ class WorldcatClient:
             ]
         return oclc_numbers
 
-    def get_worldcat_xml(self, oclc_number: str) -> bytes:
+    def get_xml(self, oclc_number: str) -> bytes:
         """Retrieve full MARC XML record from Worldcat, using Bookops implementation of OCLC's
         Metadata (1.0) API /bib/data.
 
@@ -98,7 +98,7 @@ class WorldcatClient:
         # return only the first record, though there should only be one from Worldcat anyhow.
         return parse_xml_to_array(data)[0]
 
-    def get_worldcat_records(self, oclc_numbers: list) -> list[Record]:
+    def get_records(self, oclc_numbers: list) -> list[Record]:
         """Retrieve full MARC records from Worldcat, using Bookops implementation of OCLC's
         Metadata (1.0) API /bib/data and pymarc's XML -> MARC conversion.
 
