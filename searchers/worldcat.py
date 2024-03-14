@@ -106,7 +106,7 @@ class WorldcatClient:
         """
         records = []
         for oclc_number in oclc_numbers:
-            xml = self.get_worldcat_xml(oclc_number)
+            xml = self.get_xml(oclc_number)
             bib = self.convert_xml_to_marc(xml)
             # TEMPORARY: Dump binary marc record to file for manual review.
             # with open(f"{oclc_number}.mrc", "wb") as f:
