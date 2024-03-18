@@ -1,4 +1,5 @@
 from discogs_client import Client
+from discogs_client.exceptions import HTTPError
 
 
 class DiscogsClient:
@@ -36,10 +37,18 @@ class DiscogsClient:
         """Get full release data from Discogs by release ID."""
         output_list = []
         for release_id in release_ids:
-            release = self.client.release(release_id)
-            # force the release to refresh to get full data
-            release.refresh()
-            output_list.append(release.data)
+            # Some release_id values return 404 "Release not found",
+            # even though they were just "found" by search.
+            # Example: release_id 8418329 from upc 4988006789890.
+            try:
+                release = self.client.release(release_id)
+                # force the release to refresh to get full data
+                release.refresh()
+                output_list.append(release.data)
+            except HTTPError:
+                # We don't care...
+                pass
+
         return output_list
 
     def parse_data(self, release_list: list) -> list:
