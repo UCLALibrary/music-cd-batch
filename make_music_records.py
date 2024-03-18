@@ -14,19 +14,26 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("music_data_file", help="Path to the TSV file of music data")
     args = parser.parse_args()
+
+    # Get the set of data provided by Music library to use for this process.
     music_data = get_dicts_from_tsv(args.music_data_file)
 
+    # Initialize the clients used for searching various data sources.
+    worldcat_client, discogs_client, musicbrainz_client = get_clients()
+
     # TODO: Remove range, used to test small subset of batch_016_20240229.tsv
-    for idx, row in enumerate(music_data[0:10], start=1):
+    for idx, row in enumerate(music_data[0:5], start=1):
         print(f"Starting row {idx}")
         upc_code, call_number, barcode, official_title = get_next_data_row(row)
         print(f"{call_number}: Searching for {upc_code} ({official_title})")
 
         # First, search Discogs and MusicBrainz for the given term.
         # Among other data, collect music publisher number(s) from those sources.
-        discogs_records = get_discogs_records(upc_code)
+        discogs_records = get_discogs_records(discogs_client, search_term=upc_code)
         print(f"\tFound {len(discogs_records)} Discogs records")
-        musicbrainz_records = get_musicbrainz_records(upc_code)
+        musicbrainz_records = get_musicbrainz_records(
+            musicbrainz_client, search_term=upc_code
+        )
         print(f"\tFound {len(musicbrainz_records)} MusicBrainz records")
 
         unique_titles = get_unique_titles(
@@ -35,24 +42,38 @@ def main() -> None:
             official_title=official_title,
         )
 
-        marc_records = get_worldcat_records(search_terms=upc_code, search_index="sn")
-        usable_records = get_usable_records(marc_records, unique_titles)
+        usable_records = get_usable_worldcat_records(
+            worldcat_client,
+            search_terms=upc_code,
+            search_index="sn",
+            unique_titles=unique_titles,
+        )
 
-        if usable_records:
-            # Do something with them
-            pass
-        else:
+        if not usable_records:
+            # If initial search on UPC didn't find anything, try searching for
+            # the music publisher numbers from Discogs/MusicBrainz.
             publisher_numbers = get_all_publisher_numbers(
                 discogs_records, musicbrainz_records
             )
             print(
                 f"\tSearching Worldcat again for music publisher numbers: {publisher_numbers}"
             )
-            # TODO: Refactor duplicate code
-            marc_records = get_worldcat_records(
-                search_terms=publisher_numbers, search_index="mn"
+            usable_records = get_usable_worldcat_records(
+                worldcat_client,
+                search_terms=publisher_numbers,
+                search_index="mn",
+                unique_titles=unique_titles,
             )
-            usable_records = get_usable_records(marc_records, unique_titles)
+
+        # If ANY WorldCat record we found is held by CLU, reject the whole set
+        # and exit this iteration: we don't want to add any dup, from any source.
+        if any_record_has_clu(worldcat_client, usable_records):
+            # Detailed message was printed in routine; add broader info here.
+            print(f"Pull CD for review [held by CLU]: {call_number} ({official_title})")
+
+        # TODO: Find best record
+        # TODO: MARC stuff
+
         print(f"Finished row {idx}\n")
 
         # Some APIs have rate limits
@@ -60,10 +81,29 @@ def main() -> None:
 
 
 def get_dicts_from_tsv(filepath: str) -> list:
+    """Read tab-separated values file, with column names in first row.
+    Return a list of dicts keyed on those column names, one dict for
+    each row of data.
+    """
     with open(filepath, mode="r") as f:
         dict_reader = DictReader(f, delimiter="\t")
         full_dicts = list(dict_reader)
     return full_dicts
+
+
+def get_clients() -> tuple[WorldcatClient, DiscogsClient, MusicbrainzClient]:
+    """Convenience method to initialize and return all needed clients
+    for searching the required data sources.
+    """
+    worldcat_client = WorldcatClient(
+        api_keys.WORLDCAT_METADATA_CLIENT_ID,
+        api_keys.WORLDCAT_METADATA_CLIENT_SECRET,
+        api_keys.WORLDCAT_PRINCIPAL_ID,
+        api_keys.WORLDCAT_PRINCIPAL_IDNS,
+    )
+    discogs_client = DiscogsClient(api_keys.DISCOGS_USER_TOKEN)
+    musicbrainz_client = MusicbrainzClient()
+    return worldcat_client, discogs_client, musicbrainz_client
 
 
 def get_next_data_row(row: dict) -> tuple[str, str, str, str]:
@@ -78,42 +118,66 @@ def get_next_data_row(row: dict) -> tuple[str, str, str, str]:
     return upc_code, call_number, barcode, official_title
 
 
-def get_worldcat_records(search_terms: str | list, search_index: str) -> list[Record]:
-    worldcat_client = WorldcatClient(
-        api_keys.WORLDCAT_METADATA_CLIENT_ID,
-        api_keys.WORLDCAT_METADATA_CLIENT_SECRET,
-        api_keys.WORLDCAT_PRINCIPAL_ID,
-        api_keys.WORLDCAT_PRINCIPAL_IDNS,
-    )
+def get_usable_worldcat_records(
+    client: WorldcatClient,
+    search_terms: str | list,
+    search_index: str,
+    unique_titles: set,
+) -> list[Record]:
+    """Convenience method which calls other methods to search Worldcat
+    and evaluate those records. This gets called multiple times with
+    different parameters.
+    Returns a list of MARC records.
+    """
+    marc_records = get_worldcat_records(client, search_terms, search_index)
+    usable_records = get_usable_records(marc_records, unique_titles)
+    return usable_records
+
+
+def get_worldcat_records(
+    client: WorldcatClient, search_terms: str | list, search_index: str
+) -> list[Record]:
+    """Search Worldcat, returning a list of MARC records matching the search term(s)."""
+    # Convert single search string into a 1-long list, for consistency
     if isinstance(search_terms, str):
         search_terms = [search_terms]
     all_records = []
     for search_term in search_terms:
-        search_results = worldcat_client.search(search_term, search_index)
-        oclc_numbers = worldcat_client.get_oclc_numbers(search_results)
-        # TEMPORARY
-        # for oclc_number in oclc_numbers:
-        #     held_by_clu = worldcat_client.is_held_by(oclc_number)
-        #     print(f"\t{oclc_number} held by CLU: {held_by_clu}")
-        marc_records = worldcat_client.get_records(oclc_numbers)
+        search_results = client.search(search_term, search_index)
+        oclc_numbers = client.get_oclc_numbers(search_results)
+        marc_records = client.get_records(oclc_numbers)
         all_records.extend(marc_records)
     print(f"\tFound {len(all_records)} Worldcat records")
     return all_records
 
 
-def get_discogs_records(search_term: str) -> list:
-    discogs_client = DiscogsClient(api_keys.DISCOGS_USER_TOKEN)
-    search_results = discogs_client.get_ids_by_upc(search_term)
-    releases = discogs_client.get_full_releases(search_results)
-    data = discogs_client.parse_data(releases)
+def get_discogs_records(client: DiscogsClient, search_term: str) -> list:
+    """Search Discogs, returning a list of data matching the search term."""
+    search_results = client.get_ids_by_upc(search_term)
+    releases = client.get_full_releases(search_results)
+    data = client.parse_data(releases)
     return data
 
 
-def get_musicbrainz_records(search_term: str) -> list:
-    musicbrainz_client = MusicbrainzClient()
-    search_results = musicbrainz_client.search_by_upc(search_term)
-    data = musicbrainz_client.parse_data(search_results)
+def get_musicbrainz_records(client: MusicbrainzClient, search_term: str) -> list:
+    """Search MusicBrainz, returning a list of data matching the search term."""
+    search_results = client.search_by_upc(search_term)
+    data = client.parse_data(search_results)
     return data
+
+
+def any_record_has_clu(client: WorldcatClient, records: list[Record]) -> bool:
+    """Check a list of MARC records against Worldcat to determine
+    whether any is held by CLU (UCLA).
+    """
+    for record in records:
+        oclc_number = get_oclc_number(record)
+        if client.is_held_by(oclc_number, oclc_symbol="CLU"):
+            print(f"\tREJECTING ALL RECORDS: OCLC {oclc_number} is held by CLU")
+            print(f"\tWorldcat Title -> {record.title}")
+            return True
+    # If we made it to here, no records are held by CLU.
+    return False
 
 
 def get_usable_records(records: list[Record], unique_titles: set) -> list[Record]:
@@ -124,7 +188,7 @@ def get_usable_records(records: list[Record], unique_titles: set) -> list[Record
     for record in records:
         # For debugging
         oclc_number = get_oclc_number(record)
-        print(f"\t\tChecking OCLC# {oclc_number} : {record.title}")
+        print(f"\t\tChecking OCLC# {oclc_number} -> {record.title}")
         if record_is_usable(record) and title_is_close_enough(record, unique_titles):
             records_to_keep.append(record)
 
@@ -157,14 +221,13 @@ def get_unique_titles(
     discogs_records: list, musicbrainz_records: list, official_title: str
 ) -> set:
     """Return a set with all unique titles from various sources."""
-    titles = [official_title]
+    titles = set()
+    titles.add(official_title)
     discogs_titles = [record["title"] for record in discogs_records]
     musicbrainz_titles = [record["title"] for record in musicbrainz_records]
-    titles.extend(discogs_titles)
-    titles.extend(musicbrainz_titles)
-    # Apply normalization and de-dup using a set.
-    unique_titles = {normalize(title) for title in titles}
-    return unique_titles
+    titles.update(discogs_titles)
+    titles.update(musicbrainz_titles)
+    return titles
 
 
 def strip_punctuation(input: str) -> str:
