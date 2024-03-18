@@ -2,7 +2,7 @@ import argparse
 import string
 from csv import DictReader
 from time import sleep
-from jellyfish import jaro_winkler_similarity
+from strsimpy import NormalizedLevenshtein
 from pymarc import Record
 from searchers.discogs import DiscogsClient
 from searchers.musicbrainz import MusicbrainzClient
@@ -234,7 +234,8 @@ def get_title_similarity_score(title_1: str, title_2: str) -> float:
     """Return similarity score for two titles.
     Similarity score ranges from 0.0 (completely different) to 1.0 (identical).
     """
-    return jaro_winkler_similarity(normalize(title_1), normalize(title_2))
+    comparator = NormalizedLevenshtein()
+    return comparator.similarity(normalize(title_1), normalize(title_2))
 
 
 def get_marc_full_title(record: Record) -> str:
