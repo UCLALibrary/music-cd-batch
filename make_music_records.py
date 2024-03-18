@@ -1,8 +1,8 @@
 import argparse
+import string
 from csv import DictReader
-
+from jellyfish import jaro_winkler_similarity
 from pymarc import Record
-
 from searchers.discogs import DiscogsClient
 from searchers.musicbrainz import MusicbrainzClient
 from searchers.worldcat import WorldcatClient
@@ -16,26 +16,50 @@ def main() -> None:
     music_data = get_dicts_from_tsv(args.music_data_file)
 
     # TODO: Remove range, used to test small subset of batch_016_20240229.tsv
-    for row in music_data[6:8]:
-        upc_code = row["UPC"]
-        official_title = row["title"]
-        print(f"Searching for {upc_code} ({official_title})")
-        marc_records = get_worldcat_records(search_term=upc_code, search_index="sn")
-        print(f"\tFound {len(marc_records)} Worldcat records")
+    for row in music_data[10:20]:
+        upc_code, call_number, barcode, official_title = get_next_data_row(row)
+        print(f"{call_number}: Searching for {upc_code} ({official_title})")
+
+        # First, search Discogs and MusicBrainz for the given term.
+        # Among other data, collect music publisher number(s) from those sources.
         discogs_records = get_discogs_records(upc_code)
         print(f"\tFound {len(discogs_records)} Discogs records")
         musicbrainz_records = get_musicbrainz_records(upc_code)
         print(f"\tFound {len(musicbrainz_records)} MusicBrainz records")
+
+        unique_titles = get_unique_titles(
+            discogs_records=discogs_records,
+            musicbrainz_records=musicbrainz_records,
+            official_title=official_title,
+        )
+
+        marc_records = get_worldcat_records(search_term=upc_code, search_index="sn")
+        print(f"\tFound {len(marc_records)} Worldcat records")
+        usable_records = get_usable_records(marc_records, unique_titles)
+        print(f"\tFound {len(usable_records)} usable Worldcat records")
         print("****")
-        for record in marc_records:
-            print("\t", record_is_usable(record))
+
+        # TODO: Some APIs have rate limits
+        # sleep(1)
 
 
-def get_dicts_from_tsv(filepath=str) -> list:
+def get_dicts_from_tsv(filepath: str) -> list:
     with open(filepath, mode="r") as f:
         dict_reader = DictReader(f, delimiter="\t")
         full_dicts = list(dict_reader)
     return full_dicts
+
+
+def get_next_data_row(row: dict) -> tuple[str, str, str, str]:
+    """Clean up source data for consistency.
+    Return as individual values instead of dict.
+    """
+    upc_code = row["UPC"].strip()
+    call_number = row["call number"].strip()
+    # Barcodes should always be uppercase.
+    barcode = row["barcode"].strip().upper()
+    official_title = row["title"].strip()
+    return upc_code, call_number, barcode, official_title
 
 
 def get_worldcat_records(search_term: str, search_index: str) -> list[Record]:
@@ -48,9 +72,9 @@ def get_worldcat_records(search_term: str, search_index: str) -> list[Record]:
     search_results = worldcat_client.search(search_term, search_index)
     oclc_numbers = worldcat_client.get_oclc_numbers(search_results)
     # TEMPORARY
-    for oclc_number in oclc_numbers:
-        held_by_clu = worldcat_client.is_held_by(oclc_number)
-        print(f"\t{oclc_number} held by CLU: {held_by_clu}")
+    # for oclc_number in oclc_numbers:
+    #     held_by_clu = worldcat_client.is_held_by(oclc_number)
+    #     print(f"\t{oclc_number} held by CLU: {held_by_clu}")
     marc_records = worldcat_client.get_records(oclc_numbers)
     return marc_records
 
@@ -77,6 +101,121 @@ def get_oclc_number(record: Record) -> str:
     """
     oclc_number = record.get("001")
     return "".join(d for d in oclc_number if d.isdigit())
+
+
+def get_unique_titles(
+    discogs_records: list, musicbrainz_records: list, official_title: str
+) -> set:
+    """Return a set with all unique titles from various sources."""
+    titles = [official_title]
+    discogs_titles = [record["title"] for record in discogs_records]
+    musicbrainz_titles = [record["title"] for record in musicbrainz_records]
+    titles.extend(discogs_titles)
+    titles.extend(musicbrainz_titles)
+    # Apply normalization and de-dup using a set.
+    unique_titles = {normalize(title) for title in titles}
+    return unique_titles
+
+
+def strip_punctuation(input: str) -> str:
+    """Remove all punctuation from a string."""
+    return input.translate(str.maketrans("", "", string.punctuation))
+
+
+def normalize_title(input: str) -> str:
+    """Applies basic normalization to a string by stripping punctuation
+    and using title case for readability.
+    """
+    return strip_punctuation(input.title())
+
+
+def normalize(input: str) -> str:
+    """Fully normalize a string for comparison with other strings.
+    Strip punctuation, remove spaces, and force to upper case.
+    """
+    new_string = input.translate(str.maketrans("", "", string.whitespace))
+    return strip_punctuation(new_string.upper())
+
+
+def title_is_close_enough(record: Record, titles: set) -> bool:
+    """Compare MARC title with Discogs/MusicBrainz/official title(s).
+    Return true if too different, beyond threshhold.
+    """
+    # For logging problems
+    oclc_number = get_oclc_number(record)
+    # record.title is just 245 $a $b; we want 245 $a $n $p $b.
+    full_title = get_marc_full_title(record)
+
+    total_score: float = 0.0
+    for title in titles:
+        # Similarity score ranges from 0.0 (completely different) to 1.0 (identical).
+        score = get_title_similarity_score(full_title, title)
+        # This threshold was used in previous phase.
+        if score < 0.4:
+            # Full title might not match, but primary (245 $a) title might.
+            short_title = get_marc_short_title(record)
+            if short_title != full_title:
+                score = get_title_similarity_score(short_title, title)
+                # Still too different?
+                if score < 0.4:
+                    print(f"\tWarning: Titles are too different: {score:.2f}")
+                    print(f"\t\tMARC Title : {full_title} ({oclc_number})")
+                    print(f"\t\tOther Title: {title}")
+        total_score += score
+    if len(titles) > 0:
+        average_score = total_score / len(titles)
+    else:
+        # No titles, no comparison, no reason to reject
+        average_score = 1.0
+    # This threshold was used in previous phase.
+    if average_score < 0.37:
+        print(
+            f"\t\tREJECTED OCLC {oclc_number}: Titles are too different: {average_score:.2f}"
+        )
+        return False
+    else:
+        # Titles are close enough
+        return True
+
+
+def get_title_similarity_score(title_1: str, title_2: str) -> float:
+    """Return similarity score for two titles.
+    Similarity score ranges from 0.0 (completely different) to 1.0 (identical).
+    """
+    return jaro_winkler_similarity(normalize(title_1), normalize(title_2))
+
+
+def get_marc_full_title(record: Record) -> str:
+    """Return full (non-default) title from MARC record.
+    Default record.title is just 245 $a $b; we want 245 $a $n $p $b.
+    We can count on these records all having 245 fields.
+    """
+    fld_245 = record.get("245")
+    # It's OK if some of these subfields don't exist.
+    sfd_list = fld_245.get_subfields("a", "n", "p", "b")
+    return " ".join(sfd_list)
+
+
+def get_marc_short_title(record: Record) -> str:
+    """Return short (non-default) title from MARC record.
+    Default record.title is just 245 $a $b; we want 245 $a.
+    We can count on these records all having 245 fields.
+    """
+    fld_245 = record.get("245")
+    # It's OK if some of these subfields don't exist.
+    sfd_list = fld_245.get_subfields("a")
+    return " ".join(sfd_list)
+
+
+def get_usable_records(records: list[Record], unique_titles: set) -> list[Record]:
+    """Given a list of MARC records and a set of title strings,
+    return a list containing only those records which have sufficient quality
+    and a title similar enough to those from all sources."""
+    records_to_keep = []
+    for record in records:
+        if record_is_usable(record) and title_is_close_enough(record, unique_titles):
+            records_to_keep.append(record)
+    return records_to_keep
 
 
 def record_is_usable(record: Record) -> bool:
@@ -141,10 +280,6 @@ def cataloging_language_is_ok(record: Record) -> bool:
         )
         is_ok = False
     return is_ok
-
-
-def remove_unsuitable_records():
-    pass
 
 
 if __name__ == "__main__":
