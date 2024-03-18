@@ -43,8 +43,23 @@ class MusicbrainzClient:
             release_dict = {
                 "title": release["title"],
                 "artist": release["artist-credit-phrase"],
-                "publisher_number": release["label-info-list"][0]["catalog-number"],
+                "publisher_number": self.get_first_catalog_number(
+                    release["label-info-list"]
+                ),
                 "full_json": release,
             }
             output_dict_list.append(release_dict)
         return output_dict_list
+
+    def get_first_catalog_number(self, label_info_list: list) -> str:
+        """Return first catalog number found. This is not always in
+        the first element of label_info_list."""
+        catalog_numbers = [
+            label.get("catalog-number")
+            for label in label_info_list
+            if label.get("catalog-number") is not None
+        ]
+        if catalog_numbers:
+            return catalog_numbers[0]
+        else:
+            return ""
