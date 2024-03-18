@@ -17,7 +17,7 @@ def main() -> None:
     music_data = get_dicts_from_tsv(args.music_data_file)
 
     # TODO: Remove range, used to test small subset of batch_016_20240229.tsv
-    for idx, row in enumerate(music_data[40:43], start=1):
+    for idx, row in enumerate(music_data[0:10], start=1):
         print(f"Starting row {idx}")
         upc_code, call_number, barcode, official_title = get_next_data_row(row)
         print(f"{call_number}: Searching for {upc_code} ({official_title})")
@@ -124,7 +124,7 @@ def get_usable_records(records: list[Record], unique_titles: set) -> list[Record
     for record in records:
         # For debugging
         oclc_number = get_oclc_number(record)
-        print(f"\t\tChecking: {oclc_number} : {record.title}")
+        print(f"\t\tChecking OCLC# {oclc_number} : {record.title}")
         if record_is_usable(record) and title_is_close_enough(record, unique_titles):
             records_to_keep.append(record)
 
@@ -200,14 +200,14 @@ def title_is_close_enough(record: Record, titles: set) -> bool:
     for title in titles:
         # Similarity score ranges from 0.0 (completely different) to 1.0 (identical).
         score = get_title_similarity_score(full_title, title)
-        print(f"\t\t{score}: {full_title=} -> {title=}")
+        print(f"\t\t{score:.2f}: {full_title=} -> {title=}")
         # This threshold was used in previous phase.
         if score < 0.4:
             # Full title might not match, but primary (245 $a) title might.
             short_title = get_marc_short_title(record)
             if short_title != full_title:
                 score = get_title_similarity_score(short_title, title)
-                print(f"\t\t{score}: {short_title=} -> {title=}")
+                print(f"\t\t{score:.2f}: {short_title=} -> {title=}")
                 # Still too different?
                 if score < 0.4:
                     print(f"\tWarning: Titles are too different: {score:.2f}")
@@ -227,6 +227,7 @@ def title_is_close_enough(record: Record, titles: set) -> bool:
         return False
     else:
         # Titles are close enough
+        print(f"\tAVERAGE SCORE: {average_score:.2f}")
         return True
 
 
