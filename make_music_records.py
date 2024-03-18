@@ -1,6 +1,7 @@
 import argparse
 import string
 from csv import DictReader
+from time import sleep
 from jellyfish import jaro_winkler_similarity
 from pymarc import Record
 from searchers.discogs import DiscogsClient
@@ -16,7 +17,8 @@ def main() -> None:
     music_data = get_dicts_from_tsv(args.music_data_file)
 
     # TODO: Remove range, used to test small subset of batch_016_20240229.tsv
-    for row in music_data[10:20]:
+    for idx, row in enumerate(music_data[40:43], start=1):
+        print(f"Starting row {idx}")
         upc_code, call_number, barcode, official_title = get_next_data_row(row)
         print(f"{call_number}: Searching for {upc_code} ({official_title})")
 
@@ -33,14 +35,28 @@ def main() -> None:
             official_title=official_title,
         )
 
-        marc_records = get_worldcat_records(search_term=upc_code, search_index="sn")
-        print(f"\tFound {len(marc_records)} Worldcat records")
+        marc_records = get_worldcat_records(search_terms=upc_code, search_index="sn")
         usable_records = get_usable_records(marc_records, unique_titles)
-        print(f"\tFound {len(usable_records)} usable Worldcat records")
-        print("****")
 
-        # TODO: Some APIs have rate limits
-        # sleep(1)
+        if usable_records:
+            # Do something with them
+            pass
+        else:
+            publisher_numbers = get_all_publisher_numbers(
+                discogs_records, musicbrainz_records
+            )
+            print(
+                f"\tSearching Worldcat again for music publisher numbers: {publisher_numbers}"
+            )
+            # TODO: Refactor duplicate code
+            marc_records = get_worldcat_records(
+                search_terms=publisher_numbers, search_index="mn"
+            )
+            usable_records = get_usable_records(marc_records, unique_titles)
+        print(f"Finished row {idx}\n")
+
+        # Some APIs have rate limits
+        sleep(1)
 
 
 def get_dicts_from_tsv(filepath: str) -> list:
@@ -62,21 +78,27 @@ def get_next_data_row(row: dict) -> tuple[str, str, str, str]:
     return upc_code, call_number, barcode, official_title
 
 
-def get_worldcat_records(search_term: str, search_index: str) -> list[Record]:
+def get_worldcat_records(search_terms: str | list, search_index: str) -> list[Record]:
     worldcat_client = WorldcatClient(
         api_keys.WORLDCAT_METADATA_CLIENT_ID,
         api_keys.WORLDCAT_METADATA_CLIENT_SECRET,
         api_keys.WORLDCAT_PRINCIPAL_ID,
         api_keys.WORLDCAT_PRINCIPAL_IDNS,
     )
-    search_results = worldcat_client.search(search_term, search_index)
-    oclc_numbers = worldcat_client.get_oclc_numbers(search_results)
-    # TEMPORARY
-    # for oclc_number in oclc_numbers:
-    #     held_by_clu = worldcat_client.is_held_by(oclc_number)
-    #     print(f"\t{oclc_number} held by CLU: {held_by_clu}")
-    marc_records = worldcat_client.get_records(oclc_numbers)
-    return marc_records
+    if isinstance(search_terms, str):
+        search_terms = [search_terms]
+    all_records = []
+    for search_term in search_terms:
+        search_results = worldcat_client.search(search_term, search_index)
+        oclc_numbers = worldcat_client.get_oclc_numbers(search_results)
+        # TEMPORARY
+        # for oclc_number in oclc_numbers:
+        #     held_by_clu = worldcat_client.is_held_by(oclc_number)
+        #     print(f"\t{oclc_number} held by CLU: {held_by_clu}")
+        marc_records = worldcat_client.get_records(oclc_numbers)
+        all_records.extend(marc_records)
+    print(f"\tFound {len(all_records)} Worldcat records")
+    return all_records
 
 
 def get_discogs_records(search_term: str) -> list:
@@ -94,12 +116,40 @@ def get_musicbrainz_records(search_term: str) -> list:
     return data
 
 
+def get_usable_records(records: list[Record], unique_titles: set) -> list[Record]:
+    """Given a list of MARC records and a set of title strings,
+    return a list containing only those records which have sufficient quality
+    and a title similar enough to those from all sources."""
+    records_to_keep = []
+    for record in records:
+        # For debugging
+        oclc_number = get_oclc_number(record)
+        print(f"\t\tChecking: {oclc_number} : {record.title}")
+        if record_is_usable(record) and title_is_close_enough(record, unique_titles):
+            records_to_keep.append(record)
+
+    print(f"\tFound {len(records_to_keep)} usable Worldcat records")
+    return records_to_keep
+
+
+def get_all_publisher_numbers(discogs_records: list, musicbrainz_records: list) -> set:
+    """Return all music publisher numbers from the given lists, combined into
+    a set for uniqueness.
+    """
+    all_pub_numbers = set()
+    dc_pub_numbers = {normalize(r["publisher_number"]) for r in discogs_records}
+    mb_pub_numbers = {normalize(r["publisher_number"]) for r in musicbrainz_records}
+    all_pub_numbers.update(dc_pub_numbers)
+    all_pub_numbers.update(mb_pub_numbers)
+    return all_pub_numbers
+
+
 def get_oclc_number(record: Record) -> str:
     """Return the OCLC number from the MARC record's 001 field, with
     alpha prefix removed.  Assumes the MARC record came from OCLC,
     which is safe for this project, so will always have an 001 with OCLC#.
     """
-    oclc_number = record.get("001")
+    oclc_number = record.get("001").data
     return "".join(d for d in oclc_number if d.isdigit())
 
 
@@ -150,12 +200,14 @@ def title_is_close_enough(record: Record, titles: set) -> bool:
     for title in titles:
         # Similarity score ranges from 0.0 (completely different) to 1.0 (identical).
         score = get_title_similarity_score(full_title, title)
+        print(f"\t\t{score}: {full_title=} -> {title=}")
         # This threshold was used in previous phase.
         if score < 0.4:
             # Full title might not match, but primary (245 $a) title might.
             short_title = get_marc_short_title(record)
             if short_title != full_title:
                 score = get_title_similarity_score(short_title, title)
+                print(f"\t\t{score}: {short_title=} -> {title=}")
                 # Still too different?
                 if score < 0.4:
                     print(f"\tWarning: Titles are too different: {score:.2f}")
@@ -205,17 +257,6 @@ def get_marc_short_title(record: Record) -> str:
     # It's OK if some of these subfields don't exist.
     sfd_list = fld_245.get_subfields("a")
     return " ".join(sfd_list)
-
-
-def get_usable_records(records: list[Record], unique_titles: set) -> list[Record]:
-    """Given a list of MARC records and a set of title strings,
-    return a list containing only those records which have sufficient quality
-    and a title similar enough to those from all sources."""
-    records_to_keep = []
-    for record in records:
-        if record_is_usable(record) and title_is_close_enough(record, unique_titles):
-            records_to_keep.append(record)
-    return records_to_keep
 
 
 def record_is_usable(record: Record) -> bool:
