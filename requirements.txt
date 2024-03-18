@@ -6,3 +6,5 @@ python3-discogs-client==2.7
 musicbrainzngs==0.7.1 
 # For MARC records
 pymarc==5.1.2 
+# For title (string) comparison
+jellyfish==1.0.3
