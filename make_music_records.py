@@ -13,6 +13,19 @@ import api_keys
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("music_data_file", help="Path to the TSV file of music data")
+    parser.add_argument(
+        "-s",
+        "--start-index",
+        type=int,
+        default=0,
+        help="Starting row of data to process (0-based)",
+    )
+    parser.add_argument(
+        "-e",
+        "--end-index",
+        type=int,
+        help="Ending row of data to process (0-based)",
+    )
     args = parser.parse_args()
 
     # Get the set of data provided by Music library to use for this process.
@@ -21,8 +34,7 @@ def main() -> None:
     # Initialize the clients used for searching various data sources.
     worldcat_client, discogs_client, musicbrainz_client = get_clients()
 
-    # TODO: Remove range, used to test small subset of batch_016_20240229.tsv
-    for idx, row in enumerate(music_data[0:50], start=1):
+    for idx, row in enumerate(music_data[args.start_index : args.end_index], start=1):
         print(f"Starting row {idx}")
         upc_code, call_number, barcode, official_title = get_next_data_row(row)
         print(f"{call_number}: Searching for {upc_code} ({official_title})")
@@ -432,12 +444,18 @@ def compare_records(record1: Record, record2: Record) -> Record:
     if record1_elvl_score >= record2_elvl_score:
         # TODO: Remove these prints or use logging.debug
         print(
-            f"\t\t{get_oclc_number(record1)} ({record1_elvl_score}) beats {get_oclc_number(record2)} ({record2_elvl_score})"
+            (
+                f"\t\t{get_oclc_number(record1)} ({record1_elvl_score}) beats "
+                f"{get_oclc_number(record2)} ({record2_elvl_score})"
+            )
         )
         return record1
     else:
         print(
-            f"\t\t{get_oclc_number(record2)} ({record2_elvl_score}) beats {get_oclc_number(record1)} ({record1_elvl_score})"
+            (
+                f"\t\t{get_oclc_number(record2)} ({record1_elvl_score}) beats "
+                f"{get_oclc_number(record1)} ({record1_elvl_score})"
+            )
         )
         return record2
 
