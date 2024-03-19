@@ -22,7 +22,7 @@ def main() -> None:
     worldcat_client, discogs_client, musicbrainz_client = get_clients()
 
     # TODO: Remove range, used to test small subset of batch_016_20240229.tsv
-    for idx, row in enumerate(music_data[0:5], start=1):
+    for idx, row in enumerate(music_data[0:50], start=1):
         print(f"Starting row {idx}")
         upc_code, call_number, barcode, official_title = get_next_data_row(row)
         print(f"{call_number}: Searching for {upc_code} ({official_title})")
@@ -69,10 +69,19 @@ def main() -> None:
         # and exit this iteration: we don't want to add any dup, from any source.
         if any_record_has_clu(worldcat_client, usable_records):
             # Detailed message was printed in routine; add broader info here.
-            print(f"Pull CD for review [held by CLU]: {call_number} ({official_title})")
+            print(
+                f"\tPull CD for review [held by CLU]: {call_number} ({official_title})"
+            )
+            print(f"Finished row {idx}\n")
+            continue
 
-        # TODO: Find best record
-        # TODO: MARC stuff
+        marc_record = get_best_worldcat_record(usable_records)
+        if marc_record:
+            print(f"\tWinner: OCLC# {get_oclc_number(marc_record)}")
+            # TODO: Enhance marc_record with local fields
+        else:
+            # TODO: Create minimal MARC record from Discogs/Musicbrainz data
+            pass
 
         print(f"Finished row {idx}\n")
 
@@ -386,6 +395,63 @@ def cataloging_language_is_ok(record: Record) -> bool:
         )
         is_ok = False
     return is_ok
+
+
+def get_best_worldcat_record(records: list[Record]) -> Record | None:
+    """Given a list of MARC records, compare them on various criteria
+    and return the 'best' one according to those criteria.
+    """
+    # If records is empty, return None.
+    if not records:
+        return None
+    # If only one record, it's the best! - return it.
+    if len(records) == 1:
+        return records[0]
+    # More than one record:
+    # Start with the first, iterate over the other records and compare:
+    # Winner of [0,1] meets record 2; winner of that meets 3, etc.
+    best_record = records[0]
+    for challenger in records[1:]:
+        best_record = compare_records(best_record, challenger)
+    return best_record
+
+
+def compare_records(record1: Record, record2: Record) -> Record:
+    """Compare attributes of 2 records and return the 'best' one."""
+    # First, compare encoding levels; best wins 5 points.
+    record1_elvl_score = get_encoding_level_score(record1)
+    record2_elvl_score = get_encoding_level_score(record2)
+    # If encoding level scores are the same, check number of Worldcat holdings
+    # to break the tie.
+    # TODO: bookops package, and Worldcat Metadata API in general, don't support
+    # getting number of holdings - only the Search API does that.
+    # 2024-03-18 akohler asked Hermine how important this is now.
+
+    # For now, return the record with the best encoding level score;
+    # if record1 and record2 tie on this, return record1.
+    if record1_elvl_score >= record2_elvl_score:
+        # TODO: Remove these prints or use logging.debug
+        print(
+            f"\t\t{get_oclc_number(record1)} ({record1_elvl_score}) beats {get_oclc_number(record2)} ({record2_elvl_score})"
+        )
+        return record1
+    else:
+        print(
+            f"\t\t{get_oclc_number(record2)} ({record2_elvl_score}) beats {get_oclc_number(record1)} ({record1_elvl_score})"
+        )
+        return record2
+
+
+def get_encoding_level_score(record: Record) -> int:
+    """Return a numerical score to represent the quality of a MARC record's
+    encoding level (LDR/17).
+    """
+    # First, compare encoding levels: (best to worst): Blank, 4, I, 1, 7, K, M, L, 3
+    # Convert blank to '#' for readability.
+    encoding_level = record.leader[17].replace(" ", "#")
+    # str.find() returns an integer position if found, or -1 if not.
+    elvl_values = "3LMK71I4#"
+    return elvl_values.find(encoding_level)
 
 
 if __name__ == "__main__":
