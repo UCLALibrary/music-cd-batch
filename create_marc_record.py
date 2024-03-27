@@ -1,22 +1,22 @@
-from pymarc import Record, Field, Leader, Subfield, TextWriter
-from io import StringIO
+from pymarc import Record, Field, Subfield
 
 
 def create_base_record() -> Record:
     """Create a base MARC record, to which metadata from an external
     source will be added."""
     record = Record()
-    # Leader fixed field. Comments with asterisks are taken from spec doc.
-    # Record status (Leader/05) - n (New)
-    # * Type (Leader/06) - j (Musical sound recording)
-    # * BLvl (Leader/07) - m (Monographic/Item)
-    # * Ctrl (Leader/08) - # (No specified type)
-    # Encoding (Leader/09) - a (Unicode)
-    # * ELvl (Leader/17) - 3 (Abbreviated level)
-    # * Desc (Leader/18) - i (ISBD punctuation included)
 
-    leader = Leader("00000njm#a22000003i#4500")
-    record.leader = leader
+    # Leader fixed field.
+    # Type (Leader/06) - j (Musical sound recording)
+    record.leader.type_of_record = "j"
+    # BLvl (Leader/07) - m (Monographic/Item)
+    record.leader.bibliographic_level = "m"
+    # Ctrl (Leader/08) - # (No specified type)
+    record.leader.type_of_control = "#"
+    # ELvl (Leader/17) - 3 (Abbreviated level)
+    record.leader.encoding_level = "3"
+    # Desc (Leader/18) - i (ISBD punctuation included)
+    record.leader.cataloging_form = "i"
 
     # 007 - physical description fixed field
     # 007 ## $a s $b d $d f $e u $f n $g g $h n $i n $m e $n u
@@ -24,20 +24,18 @@ def create_base_record() -> Record:
     record.add_field(Field(tag="007", data="sd#fungnn###eu"))
 
     # 008 - general information fixed field
-    # comments with asterisks are taken from spec doc.
-    # * DtSt (008/06) - s (Single known date/probable date)
-    # * Ctry (008/15-17) - xx# (No place, unknown, or undetermined)
-    # * Comp (008/18-19) - ##
-    # * FMus (008/20) - n (Not applicable)
-    # * Part (008/21) - n (Not applicable)
-    # * Audn (008/22) - # (Unknown or unspecified)
-    # * Form (008/23) - # (None of the following)
-    # * AccM (008/24-29) - # (No accompanying matter)
-    # * LTxt (008/30-31) - # (Item is a music sound recording)
-    # * TrAr (008/33) - # Not arrangement or transposition or not specified
-    # * MRec (008/38) - # (Not modified)
-    # * Srce (008/39) - d (Other)
-
+    # DtSt (008/06) - s (Single known date/probable date)
+    # Ctry (008/15-17) - xx# (No place, unknown, or undetermined)
+    # Comp (008/18-19) - ##
+    # FMus (008/20) - n (Not applicable)
+    # Part (008/21) - n (Not applicable)
+    # Audn (008/22) - # (Unknown or unspecified)
+    # Form (008/23) - # (None of the following)
+    # AccM (008/24-29) - # (No accompanying matter)
+    # LTxt (008/30-31) - # (Item is a music sound recording)
+    # TrAr (008/33) - # Not arrangement or transposition or not specified
+    # MRec (008/38) - # (Not modified)
+    # Srce (008/39) - d (Other)
     record.add_field(Field(tag="008", data="000000s00000000xx###nn#################d"))
 
     # 040 ## $a CLU $b eng $c CLU
@@ -49,7 +47,6 @@ def create_base_record() -> Record:
         Subfield("c", "CLU"),
     ]
     field_040 = Field(tag="040", indicators=[" ", " "], subfields=subfields_040)
-    print(field_040)
     record.add_field(field_040)
 
     # 049 ## $a CLUV $l BARCODE
@@ -137,18 +134,3 @@ def create_base_record() -> Record:
     record.add_field(field_966)
 
     return record
-
-
-def main():
-    record = create_base_record()
-    # easiest way to print a pymarc record nicely is to write it to a StringIO object
-    string = StringIO()
-    writer = TextWriter(string)
-    writer.write(record)
-    # close_fh=False to prevent closing the StringIO object so we can print it
-    writer.close(close_fh=False)
-    print(string.getvalue())
-
-
-if __name__ == "__main__":
-    main()
