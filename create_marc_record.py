@@ -12,7 +12,7 @@ def create_base_record() -> Record:
     # BLvl (Leader/07) - m (Monographic/Item)
     record.leader.bibliographic_level = "m"
     # Ctrl (Leader/08) - # (No specified type)
-    record.leader.type_of_control = "#"
+    record.leader.type_of_control = " "
     # ELvl (Leader/17) - 3 (Abbreviated level)
     record.leader.encoding_level = "3"
     # Desc (Leader/18) - i (ISBD punctuation included)
@@ -21,7 +21,7 @@ def create_base_record() -> Record:
     # 007 - physical description fixed field
     # 007 ## $a s $b d $d f $e u $f n $g g $h n $i n $m e $n u
     # translated to fixed field:
-    record.add_field(Field(tag="007", data="sd#fungnn###eu"))
+    record.add_field(Field(tag="007", data="sd fungnn|||eu"))
 
     # 008 - general information fixed field
     # DtSt (008/06) - s (Single known date/probable date)
@@ -36,7 +36,7 @@ def create_base_record() -> Record:
     # TrAr (008/33) - # Not arrangement or transposition or not specified
     # MRec (008/38) - # (Not modified)
     # Srce (008/39) - d (Other)
-    record.add_field(Field(tag="008", data="000000s00000000xx###nn#################d"))
+    record.add_field(Field(tag="008", data="YYMMDDs||||    xx ||nn          # ||| d"))
 
     # 040 ## $a CLU $b eng $c CLU
     # add_subfield method doesn't appear to work with newly created fields,
