@@ -33,10 +33,10 @@ def create_base_record() -> Record:
     # Form (008/23) - # (None of the following)
     # AccM (008/24-29) - # (No accompanying matter)
     # LTxt (008/30-31) - # (Item is a music sound recording)
-    # TrAr (008/33) - # Not arrangement or transposition or not specified
+    # TrAr (008/33) - n Not arrangement or transposition or not specified
     # MRec (008/38) - # (Not modified)
     # Srce (008/39) - d (Other)
-    record.add_field(Field(tag="008", data="YYMMDDs||||    xx ||nn          # ||| d"))
+    record.add_field(Field(tag="008", data="YYMMDDs||||    xx ||nn          n ||| d"))
 
     # 040 ## $a CLU $b eng $c CLU
     # add_subfield method doesn't appear to work with newly created fields,
