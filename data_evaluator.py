@@ -64,7 +64,7 @@ def any_record_has_clu(client: WorldcatClient, records: list[Record]) -> bool:
     """
     for record in records:
         oclc_number = get_oclc_number(record)
-        if client.is_held_by(oclc_number, oclc_symbol="CLU"):
+        if client.is_held_by_us(oclc_number):
             print(f"\tREJECTING ALL RECORDS: OCLC {oclc_number} is held by CLU")
             print(f"\tWorldcat Title -> {record.title}")
             return True

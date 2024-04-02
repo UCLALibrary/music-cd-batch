@@ -2,28 +2,16 @@ from io import BytesIO
 from bookops_worldcat import WorldcatAccessToken, MetadataSession
 from pymarc import parse_xml_to_array, Record
 
-# This uses bookops_worldcat, currently on version 0.5.0 which
-# does not yet fully support OCLC's Metadata API 2.0.
-# Some methods still use Metadata API 1.0, which is deprecated
-# and scheduled to be decommissioned 2024-04-30.
-# Devs are working on bookops_worldcat to bring it up to date;
-# there may be breaking changes from this work.
-# https://github.com/BookOps-CAT/bookops-worldcat/issues/63
-
 
 class WorldcatClient:
     def __init__(
         self,
         key: str,
         secret: str,
-        principal_id: str,
-        principal_idns: str,
-        scopes: list = ["WorldCatMetadataAPI"],
+        scopes: str = "WorldCatMetadataAPI",
     ) -> None:
         self._KEY = key
         self._SECRET = secret
-        self._PRINCIPAL_ID = principal_id
-        self._PRINCIPAL_IDNS = principal_idns
         self._SCOPES = scopes
         # Token will be set on first use.
         self._token = None
@@ -34,8 +22,6 @@ class WorldcatClient:
         self._token = WorldcatAccessToken(
             key=self._KEY,
             secret=self._SECRET,
-            principal_id=self._PRINCIPAL_ID,
-            principal_idns=self._PRINCIPAL_IDNS,
             scopes=self._SCOPES,
         )
 
@@ -58,7 +44,7 @@ class WorldcatClient:
         """
         query = f"{search_index}:{search_term}"
         with MetadataSession(authorization=self.token) as session:
-            response = session.search_brief_bibs(q=query)
+            response = session.brief_bibs_search(q=query)
             # TODO: Handle failures / errors
             return response.json()
 
@@ -81,7 +67,7 @@ class WorldcatClient:
         Return bytes (containing XML) as that's what the API returns
         """
         with MetadataSession(authorization=self.token) as session:
-            response = session.get_full_bib(oclc_number)
+            response = session.bib_get(oclc_number)
             # TEMPORARY: Dump XML to file for manual review.
             # with open(f"{oclc_number}.xml", "wb") as f:
             #     f.write(response.content)
@@ -114,11 +100,16 @@ class WorldcatClient:
             records.append(bib)
         return records
 
-    def is_held_by(self, oclc_number: str, oclc_symbol: str = "CLU") -> bool:
-        """Determine whether the given OCLC number is held by the given OCLC symbol.
-        Defaults to CLU for UCLA.
+    def is_held_by_us(self, oclc_number: str) -> bool:
+        """Determine whether the given OCLC number is held by the institution(s)
+        associated with the authorization token.
         """
         with MetadataSession(authorization=self.token) as session:
-            response = session.holding_get_status(oclc_number, instSymbol=oclc_symbol)
-            data = response.json()
-            return data.get("content").get("holdingCurrentlySet")
+            response = session.holdings_get_current(oclc_number)
+            data = response.json().get("holdings")
+            # This is a list of dictionaries - 1 per requestedControlNumber?
+            # [{'requestedControlNumber': '56713778', 'currentControlNumber': '56713778',
+            # 'institutionSymbol': 'CLU', 'holdingSet': False}]
+            for entry in data:
+                if entry["requestedControlNumber"] == oclc_number:
+                    return entry["holdingSet"]

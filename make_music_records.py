@@ -126,8 +126,6 @@ def get_clients() -> tuple[WorldcatClient, DiscogsClient, MusicbrainzClient]:
     worldcat_client = WorldcatClient(
         api_keys.WORLDCAT_METADATA_CLIENT_ID,
         api_keys.WORLDCAT_METADATA_CLIENT_SECRET,
-        api_keys.WORLDCAT_PRINCIPAL_ID,
-        api_keys.WORLDCAT_PRINCIPAL_IDNS,
     )
     discogs_client = DiscogsClient(api_keys.DISCOGS_USER_TOKEN)
     musicbrainz_client = MusicbrainzClient()

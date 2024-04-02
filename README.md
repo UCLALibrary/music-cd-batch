@@ -35,8 +35,11 @@ are installed in the container.
    # Open a Python shell in the container
    $ docker-compose exec batchcd python
    
-   # Run the program (TODO: Update program name(s))
-   $ docker-compose exec batchcd python search_worldcat.py batch_016_20240229.tsv
+   # Run the program against a full file of data
+   $ docker-compose exec batchcd python make_music_records.py batch_016_20240229.tsv
+
+   # Run the program against a file of data, starting with record 5 and ending with record 10
+   $ docker-compose exec batchcd python make_music_records.py -s 5 -e 10 batch_016_20240229.tsv
    ```
 4. Some data sources require API keys. Get a copy of `api_keys.py` from a teammate and put it in the top level directory of the project.
 
