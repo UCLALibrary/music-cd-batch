@@ -41,7 +41,9 @@ def main() -> None:
     # Initialize the clients used for searching various data sources.
     worldcat_client, discogs_client, musicbrainz_client = get_clients()
 
-    for idx, row in enumerate(music_data[args.start_index : args.end_index], start=1):
+    for idx, row in enumerate(
+        music_data[args.start_index : args.end_index], start=args.start_index
+    ):
         print(f"Starting row {idx}")
         upc_code, call_number, barcode, official_title = get_next_data_row(row)
         print(f"{call_number}: Searching for {upc_code} ({official_title})")
