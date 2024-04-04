@@ -7,6 +7,7 @@ from data_evaluator import (
     get_encoding_level_score,
     normalize,
     normalize_title,
+    record_is_usable,
     record_type_is_ok,
     strip_punctuation,
 )
@@ -74,3 +75,7 @@ class RecordQualityTests(unittest.TestCase):
         # Change it to unacceptable "z", which scores -1
         base_record.leader.encoding_level = "z"
         self.assertEqual(get_encoding_level_score(base_record), -1)
+
+    def test_record_is_usable(self):
+        base_record = self.get_base_record()
+        self.assertTrue(record_is_usable(base_record))
