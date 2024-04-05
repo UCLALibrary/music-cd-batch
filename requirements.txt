@@ -1,5 +1,5 @@
 # For OCLC Worldcat Metadata API support
-bookops-worldcat==0.5.0
+bookops-worldcat==1.0.0
 # For Discogs
 python3-discogs-client==2.7
 # For Musicbrainz

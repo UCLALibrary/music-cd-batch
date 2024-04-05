@@ -10,8 +10,6 @@ class TestSearchWorldcat(unittest.TestCase):
         cls.worldcat_client = WorldcatClient(
             "fake_client_id",
             "fake_client_secret",
-            "fake_principal_id",
-            "fake_principal_idns",
         )
         # Load sample data for use by all tests.
         # Dict of dicts, keyed on UPC code, with real (as of 2024-03-12) response data.
@@ -36,8 +34,6 @@ class TestMarcXmlConversion(unittest.TestCase):
         cls.worldcat_client = WorldcatClient(
             "fake_client_id",
             "fake_client_secret",
-            "fake_principal_id",
-            "fake_principal_idns",
         )
 
     def test_xml_to_binary_marc(self):
