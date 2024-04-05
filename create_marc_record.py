@@ -150,6 +150,161 @@ def add_local_fields(record: Record, barcode: str, call_number: str) -> Record:
     return record
 
 
+def add_discogs_data(base_record: Record, data: dict) -> Record:
+    # Dates (008/07-10) - release year
+    year = str(data["full_json"]["year"])  # make a string for later concatenation
+    current_008 = base_record.get_fields("008")[0].data
+    year_008 = current_008[:7] + year + current_008[11:]
+
+    # Lang (008/35-37) - zxx
+    new_008 = year_008[:35] + "zxx" + year_008[38:]
+    base_record.remove_fields("008")
+    base_record.add_ordered_field(Field(tag="008", data=new_008))
+
+    # 024 8# $a IDENTIFIERS\VALUE (only for type: Barcode)
+    # If no barcode element, do not include field.
+    if data["full_json"]["identifiers"]:
+        for identifier in data["full_json"]["identifiers"]:
+            # include only barcode elements without description: Text.
+            if identifier["type"] == "Barcode" and identifier["description"] != "Text":
+                # Normalize by removing spaces from value
+                value = identifier["value"].replace(" ", "")
+                subfields_024 = [Subfield("a", value)]
+                field_024 = Field(
+                    tag="024", indicators=["8", " "], subfields=subfields_024
+                )
+                base_record.add_ordered_field(field_024)
+
+    # 028 02 $a LABELS\CATNO $b LABELS\NAME
+    # If no labels\catno element, do not include field.
+    if data["full_json"]["labels"]:
+        for label in data["full_json"]["labels"]:
+            # If there are multiple labels\catno elements, create multiple 028 fields.
+            # If no labels\name element, do not include $b.
+            if "name" not in label:
+                subfields_028 = [Subfield("a", label["catno"])]
+            else:
+                subfields_028 = [
+                    Subfield("a", label["catno"]),
+                    Subfield("b", label["name"]),
+                ]
+            field_028 = Field(tag="028", indicators=["0", "2"], subfields=subfields_028)
+            base_record.add_ordered_field(field_028)
+
+    # 245 00 $a TITLE / $c ARTISTS\NAME
+    title_245 = data["title"]
+    # first artist only
+    if "artist" in data:
+        artist_245 = data["artist"]
+        # format: $a Title <space> <slash> $c Artists\name <period>
+        subfields_245 = [
+            Subfield("a", title_245 + " /"),
+            Subfield("c", artist_245 + "."),
+        ]
+    else:
+        # format: $a Title <period>
+        subfields_245 = [Subfield("a", title_245 + ".")]
+    # if the first word of the title=”the” then 2nd indicator=4.
+    # if the first word of the title=”a” then 2nd indicator=2.
+    if title_245.lower().startswith("the "):
+        field_245 = Field(tag="245", indicators=["0", "4"], subfields=subfields_245)
+    elif title_245.lower().startswith("a "):
+        field_245 = Field(tag="245", indicators=["0", "2"], subfields=subfields_245)
+    elif title_245.lower().startswith("an "):
+        field_245 = Field(tag="245", indicators=["0", "3"], subfields=subfields_245)
+    else:
+        field_245 = Field(tag="245", indicators=["0", "0"], subfields=subfields_245)
+    base_record.add_ordered_field(field_245)
+
+    # 264 #1 $a [Place of publication not identified] : $b LABELS\NAME, $c [RELEASED]
+    # For DATE - 1st 4 digits only
+    # If no label-info\label\name element, fill in $b with “[publisher not identified]”
+    # If there are multiple label-info\label\name elements, take only the first instance.
+    # If no date element, fill in $c with “[date of publication not identified]”
+
+    date_264 = str(data["full_json"]["year"])  # make a string for later concatenation
+    if data["full_json"]["labels"]:
+        label = data["full_json"]["labels"][0]
+        if "name" in label:
+            publisher = label["name"]
+        else:
+            publisher = "[publisher not identified]"
+    else:
+        publisher = "[publisher not identified]"
+
+    # format: [Place of publication not identified] <space> <colon>$b  LABELS\NAME <comma> $c <open square bracket>RELEASED<closed square bracket>
+    subfields_264 = [
+        Subfield("a", "[Place of publication not identified] :"),
+        Subfield("b", publisher + ","),
+        Subfield("c", "[" + date_264 + "]"),
+    ]
+    field_264 = Field(tag="264", indicators=[" ", "1"], subfields=subfields_264)
+    base_record.add_ordered_field(field_264)
+
+    # 300 ## $a FORMATS\QTY audio disc : $b digital ; $c 4 3/4 in.
+    # IF FORMATS\QTY>1, THEN $a FORMATS\QTY audio discs : $b digital ; $c 4 3/4 in.
+    # If no formats\qty element, or if formats\qty=0, fill in with “1.”
+
+    if data["full_json"]["formats"]:
+        qty = data["full_json"]["formats"][0]["qty"]
+    if not qty or qty == "0":
+        qty = "1"
+    if int(qty) > 1:
+        qty_text = qty + " audio discs :"
+    else:
+        qty_text = qty + " audio disc :"
+
+    # format: $a FORMATS\QTY audio disc <space> <colon> $b digital <space> <semicolon> $c 4 3/4 in.
+    subfields_300 = [
+        Subfield("a", qty_text),
+        Subfield("b", "digital ;"),
+        Subfield("c", "4 3/4 in."),
+    ]
+    field_300 = Field(tag="300", indicators=[" ", " "], subfields=subfields_300)
+    base_record.add_ordered_field(field_300)
+
+    # 500 ## $a Title from Discogs database.
+    # same as 245 $a
+    subfields_500 = [Subfield("a", title_245)]
+    field_500 = Field(tag="500", indicators=[" ", " "], subfields=subfields_500)
+    base_record.add_ordered_field(field_500)
+
+    # 505 0# $a TRACKLIST\TITLE -- $a TRACKLIST\TITLE -- $a TRACKLIST\TITLE […].
+    # If no tracklist element, do not include field.
+    if data["full_json"]["tracklist"]:
+        subfields_505 = []
+        # last $a is formatted differently
+        for track in data["full_json"]["tracklist"][:-1]:
+            # format:  $a TRACKLIST\TITLE <space> <hyphen> <hyphen> <space> TRACKLIST\TITLE<period>
+            track_title = track["title"]
+            subfields_505.append(Subfield("a", track_title + " --"))
+        # get last subfield and format
+        last_track_title = data["full_json"]["tracklist"][-1]["title"]
+        subfields_505.append(Subfield("a", last_track_title + "."))
+
+        field_505 = Field(tag="505", indicators=["0", " "], subfields=subfields_505)
+        base_record.add_ordered_field(field_505)
+
+    # 653 #6 $a GENRES
+    # include all genres in $a subfields
+    if data["full_json"]["genres"]:
+        subfields_653 = []
+        for genre in data["full_json"]["genres"]:
+            subfields_653.append(Subfield("a", genre))
+            field_653 = Field(tag="653", indicators=[" ", "6"], subfields=subfields_653)
+        base_record.add_ordered_field(field_653)
+
+    # 720 ## $a ARTISTS_SORT.
+    # single string fields with possible multiple artists
+    artist_720 = data["full_json"]["artists_sort"]
+    # format: $a ARTISTS_SORT.
+    subfields_720 = [Subfield("a", artist_720 + ".")]
+    field_720 = Field(tag="720", indicators=[" ", " "], subfields=subfields_720)
+    base_record.add_ordered_field(field_720)
+
+    return base_record
+
+
 def write_marc_record(record: Record, filename: str) -> None:
     """Write the record to a file in binary MARC format. Records are
     appended to the file.

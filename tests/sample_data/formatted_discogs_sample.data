@@ -1,0 +1,460 @@
+{
+  "title": "Soliloquy For Lilith",
+  "artist": "Nurse With Wound",
+  "publisher_number": "UDX 092",
+  "full_json": {
+    "id": 193195,
+    "resource_url": "https://api.discogs.com/releases/193195",
+    "status": "Accepted",
+    "year": 2003,
+    "uri": "https://www.discogs.com/release/193195-Nurse-With-Wound-Soliloquy-For-Lilith",
+    "artists": [
+      {
+        "name": "Nurse With Wound",
+        "anv": "",
+        "join": "",
+        "role": "",
+        "tracks": "",
+        "id": 26101,
+        "resource_url": "https://api.discogs.com/artists/26101",
+        "thumbnail_url": "https://i.discogs.com/qcbrqcITulloadAYEt4Y9ILUj3CIQA75oECRq6SoIVY/rs:fit/g:sm/q:40/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9BLTI2MTAx/LTE0ODkyNzIwOTgt/NzcxNi5qcGVn.jpeg"
+      }
+    ],
+    "artists_sort": "Nurse With Wound",
+    "labels": [
+      {
+        "name": "United Dairies",
+        "catno": "UDX 092",
+        "entity_type": "1",
+        "entity_type_name": "Label",
+        "id": 8625,
+        "resource_url": "https://api.discogs.com/labels/8625",
+        "thumbnail_url": "https://i.discogs.com/8-Aj2LsNCzdvQ6ZR4fiIeyiRKJaFdKZokpbYYSyELR0/rs:fit/g:sm/q:40/h:111/w:83/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9MLTg2MjUt/MDAxLmpwZw.jpeg"
+      }
+    ],
+    "series": [],
+    "companies": [
+      {
+        "name": "The Shadow Factory",
+        "catno": "",
+        "entity_type": "23",
+        "entity_type_name": "Recorded At",
+        "id": 293518,
+        "resource_url": "https://api.discogs.com/labels/293518",
+        "thumbnail_url": ""
+      }
+    ],
+    "formats": [
+      {
+        "name": "CD",
+        "qty": "3",
+        "descriptions": [
+          "Album",
+          "Remastered"
+        ]
+      },
+      {
+        "name": "Box Set",
+        "qty": "1",
+        "descriptions": [
+          "Limited Edition"
+        ]
+      }
+    ],
+    "data_quality": "Correct",
+    "community": {
+      "have": 410,
+      "want": 237,
+      "rating": {
+        "count": 91,
+        "average": 4.57
+      },
+      "submitter": {
+        "username": "davidagbr",
+        "resource_url": "https://api.discogs.com/users/davidagbr"
+      },
+      "contributors": [
+        {
+          "username": "davidagbr",
+          "resource_url": "https://api.discogs.com/users/davidagbr"
+        },
+        {
+          "username": "xdefenestratorx",
+          "resource_url": "https://api.discogs.com/users/xdefenestratorx"
+        },
+        {
+          "username": "drij",
+          "resource_url": "https://api.discogs.com/users/drij"
+        },
+        {
+          "username": "md",
+          "resource_url": "https://api.discogs.com/users/md"
+        },
+        {
+          "username": "3silences33",
+          "resource_url": "https://api.discogs.com/users/3silences33"
+        },
+        {
+          "username": "vom",
+          "resource_url": "https://api.discogs.com/users/vom"
+        },
+        {
+          "username": "pkdickhead",
+          "resource_url": "https://api.discogs.com/users/pkdickhead"
+        },
+        {
+          "username": "fulcanelli",
+          "resource_url": "https://api.discogs.com/users/fulcanelli"
+        },
+        {
+          "username": "Lanciferion",
+          "resource_url": "https://api.discogs.com/users/Lanciferion"
+        },
+        {
+          "username": "vententin",
+          "resource_url": "https://api.discogs.com/users/vententin"
+        },
+        {
+          "username": "Kater_Murr",
+          "resource_url": "https://api.discogs.com/users/Kater_Murr"
+        }
+      ],
+      "data_quality": "Correct",
+      "status": "Accepted"
+    },
+    "format_quantity": 3,
+    "date_added": "2003-10-10T10:55:11-07:00",
+    "date_changed": "2013-12-11T00:53:42-08:00",
+    "num_for_sale": 8,
+    "lowest_price": 23,
+    "master_id": 57500,
+    "master_url": "https://api.discogs.com/masters/57500",
+    "title": "Soliloquy For Lilith",
+    "country": "UK",
+    "released": "2003",
+    "notes": "Released in a golden lettered box with discs in black and white illustrated card sleeves. Includes an insert.\r\n\r\nLimited edition reissue of the 1988 album, plus a CD of new material. \r\n\r\nFirst edition limited to 1000 copies.\r\n\r\nAll material for this edition was recorded at the Shadow Factory, May 1988.\r\n\r\nOur thanks to Electricity for making this recording possible.",
+    "released_formatted": "2003",
+    "identifiers": [
+      {
+        "type": "Barcode",
+        "value": "5021958414720",
+        "description": "Not indicated on the box"
+      },
+      {
+        "type": "Mastering SID Code",
+        "value": "IFPI LW60",
+        "description": "All Discs"
+      },
+      {
+        "type": "Mould SID Code",
+        "value": "IFPI 1F05",
+        "description": "All Discs"
+      },
+      {
+        "type": "Matrix / Runout",
+        "value": "UJ666 DISC 1 E00276-2",
+        "description": "Disc 1"
+      },
+      {
+        "type": "Matrix / Runout",
+        "value": "UJ666 DISC 2 E00277-1",
+        "description": "Disc 2"
+      },
+      {
+        "type": "Matrix / Runout",
+        "value": "UJ666 DISC 3 E00278-2",
+        "description": "Disc 3"
+      }
+    ],
+    "videos": [
+      {
+        "uri": "https://www.youtube.com/watch?v=QfqxQZMvid8",
+        "title": "Soliloquy for Lilith 1",
+        "description": "Provided to YouTube by The state51 Conspiracy\n\nSoliloquy for Lilith 1 · Nurse With Wound\n\nSoliloquy for Lilith\n\n℗ 2005 Jnana Records\n\nReleased on: 2005-01-01\n\nComposer: Steven Stapleton\n\nAuto-generated by YouTube.",
+        "duration": 0,
+        "embed": true
+      },
+      {
+        "uri": "https://www.youtube.com/watch?v=ZlcmGl1-UIg",
+        "title": "Soliloquy for Lilith 2",
+        "description": "Provided to YouTube by The state51 Conspiracy\n\nSoliloquy for Lilith 2 · Nurse With Wound\n\nSoliloquy for Lilith\n\n℗ 2005 Jnana Records\n\nReleased on: 2005-01-01\n\nComposer: Steven Stapleton\n\nAuto-generated by YouTube.",
+        "duration": 0,
+        "embed": true
+      },
+      {
+        "uri": "https://www.youtube.com/watch?v=Y00Vix3Z2WE",
+        "title": "Soliloquy for Lilith 3",
+        "description": "Provided to YouTube by The state51 Conspiracy\n\nSoliloquy for Lilith 3 · Nurse With Wound\n\nSoliloquy for Lilith\n\n℗ 2005 Jnana Records\n\nReleased on: 2005-01-01\n\nComposer: Steven Stapleton\n\nAuto-generated by YouTube.",
+        "duration": 0,
+        "embed": true
+      },
+      {
+        "uri": "https://www.youtube.com/watch?v=TqLby_79QoI",
+        "title": "Soliloquy for Lilith 4",
+        "description": "Provided to YouTube by The state51 Conspiracy\n\nSoliloquy for Lilith 4 · Nurse With Wound\n\nSoliloquy for Lilith\n\n℗ 2005 Jnana Records\n\nReleased on: 2005-01-01\n\nComposer: Steven Stapleton\n\nAuto-generated by YouTube.",
+        "duration": 0,
+        "embed": true
+      },
+      {
+        "uri": "https://www.youtube.com/watch?v=kle7XC5i8Oo",
+        "title": "Soliloquy for Lilith 5",
+        "description": "Provided to YouTube by The state51 Conspiracy\n\nSoliloquy for Lilith 5 · Nurse With Wound\n\nSoliloquy for Lilith\n\n℗ 2005 Jnana Records\n\nReleased on: 2005-01-01\n\nComposer: Steven Stapleton\n\nAuto-generated by YouTube.",
+        "duration": 0,
+        "embed": true
+      },
+      {
+        "uri": "https://www.youtube.com/watch?v=Q_rOYfWfDSs",
+        "title": "Soliloquy for Lilith 6",
+        "description": "Provided to YouTube by The state51 Conspiracy\n\nSoliloquy for Lilith 6 · Nurse With Wound\n\nSoliloquy for Lilith\n\n℗ 2005 Jnana Records\n\nReleased on: 2005-01-01\n\nComposer: Steven Stapleton\n\nAuto-generated by YouTube.",
+        "duration": 0,
+        "embed": true
+      },
+      {
+        "uri": "https://www.youtube.com/watch?v=DFDun-Q3mRA",
+        "title": "Soliloquy for Lilith 7",
+        "description": "Provided to YouTube by The state51 Conspiracy\n\nSoliloquy for Lilith 7 · Nurse With Wound\n\nSoliloquy for Lilith\n\n℗ 2005 Jnana Records\n\nReleased on: 2005-01-01\n\nComposer: Steven Stapleton\n\nAuto-generated by YouTube.",
+        "duration": 0,
+        "embed": true
+      },
+      {
+        "uri": "https://www.youtube.com/watch?v=weDrLjo_wWo",
+        "title": "Soliloquy for Lilith 8",
+        "description": "Provided to YouTube by The state51 Conspiracy\n\nSoliloquy for Lilith 8 · Nurse With Wound\n\nSoliloquy for Lilith\n\n℗ 2005 Jnana Records\n\nReleased on: 2005-01-01\n\nComposer: Steven Stapleton\n\nAuto-generated by YouTube.",
+        "duration": 0,
+        "embed": true
+      }
+    ],
+    "genres": [
+      "Electronic"
+    ],
+    "styles": [
+      "Abstract",
+      "Drone",
+      "Experimental"
+    ],
+    "tracklist": [
+      {
+        "position": "1-1",
+        "type_": "track",
+        "title": "Untitled",
+        "duration": "17:56"
+      },
+      {
+        "position": "1-2",
+        "type_": "track",
+        "title": "Untitled",
+        "duration": "17:06"
+      },
+      {
+        "position": "1-3",
+        "type_": "track",
+        "title": "Untitled",
+        "duration": "17:51"
+      },
+      {
+        "position": "2-1",
+        "type_": "track",
+        "title": "Untitled",
+        "duration": "17:51"
+      },
+      {
+        "position": "2-2",
+        "type_": "track",
+        "title": "Untitled",
+        "duration": "17:29"
+      },
+      {
+        "position": "2-3",
+        "type_": "track",
+        "title": "Untitled",
+        "duration": "17:30"
+      },
+      {
+        "position": "3-1",
+        "type_": "track",
+        "title": "Untitled",
+        "duration": "18:54"
+      },
+      {
+        "position": "3-2",
+        "type_": "track",
+        "title": "Untitled",
+        "duration": "20:52"
+      }
+    ],
+    "extraartists": [
+      {
+        "name": "Paul Jackson (13)",
+        "anv": "",
+        "join": "",
+        "role": "Artwork [Photoshop Work]",
+        "tracks": "",
+        "id": 1838264,
+        "resource_url": "https://api.discogs.com/artists/1838264"
+      },
+      {
+        "name": "Babs Santini",
+        "anv": "",
+        "join": "",
+        "role": "Design",
+        "tracks": "",
+        "id": 1084248,
+        "resource_url": "https://api.discogs.com/artists/1084248"
+      },
+      {
+        "name": "Dik (2)",
+        "anv": "",
+        "join": "",
+        "role": "Engineer",
+        "tracks": "",
+        "id": 752187,
+        "resource_url": "https://api.discogs.com/artists/752187"
+      },
+      {
+        "name": "Steven Stapleton",
+        "anv": "",
+        "join": "",
+        "role": "Mixed By",
+        "tracks": "",
+        "id": 185137,
+        "resource_url": "https://api.discogs.com/artists/185137"
+      },
+      {
+        "name": "Diana Rogerson",
+        "anv": "",
+        "join": "",
+        "role": "Recorded By",
+        "tracks": "",
+        "id": 84400,
+        "resource_url": "https://api.discogs.com/artists/84400"
+      },
+      {
+        "name": "Steven Stapleton",
+        "anv": "",
+        "join": "",
+        "role": "Recorded By",
+        "tracks": "",
+        "id": 185137,
+        "resource_url": "https://api.discogs.com/artists/185137"
+      },
+      {
+        "name": "Denis Blackham",
+        "anv": "",
+        "join": "",
+        "role": "Remastered By",
+        "tracks": "",
+        "id": 294328,
+        "resource_url": "https://api.discogs.com/artists/294328"
+      }
+    ],
+    "images": [
+      {
+        "type": "primary",
+        "uri": "https://i.discogs.com/A1GsN5z4rtq4dOU8cBGFh2B-oyXmT4Vywy1h0DcVd5Q/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMTYzOTQzODU3/LmpwZWc.jpeg",
+        "resource_url": "https://i.discogs.com/A1GsN5z4rtq4dOU8cBGFh2B-oyXmT4Vywy1h0DcVd5Q/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMTYzOTQzODU3/LmpwZWc.jpeg",
+        "uri150": "https://i.discogs.com/qI1SZbzdUzOgS1Wjb8c_lOt8v5S5WhbPbfYtTkHYKok/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMTYzOTQzODU3/LmpwZWc.jpeg",
+        "width": 600,
+        "height": 600
+      },
+      {
+        "type": "secondary",
+        "uri": "https://i.discogs.com/pzqwhoxRIBY2m0YqNS8R3uJknpjSR74ak40yO0FFU48/rs:fit/g:sm/q:90/h:52/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjI1/LTYyNTQuanBlZw.jpeg",
+        "resource_url": "https://i.discogs.com/pzqwhoxRIBY2m0YqNS8R3uJknpjSR74ak40yO0FFU48/rs:fit/g:sm/q:90/h:52/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjI1/LTYyNTQuanBlZw.jpeg",
+        "uri150": "https://i.discogs.com/1t9vgxYJ1tGM-ef4WMvthfhQljKPdnHTX3WhvFWlK88/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjI1/LTYyNTQuanBlZw.jpeg",
+        "width": 600,
+        "height": 52
+      },
+      {
+        "type": "secondary",
+        "uri": "https://i.discogs.com/sD6Lr50v9hk__ItH8HHkacJt9P2oH_hKt6w8-kH-dZI/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjQw/LTc4NTYuanBlZw.jpeg",
+        "resource_url": "https://i.discogs.com/sD6Lr50v9hk__ItH8HHkacJt9P2oH_hKt6w8-kH-dZI/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjQw/LTc4NTYuanBlZw.jpeg",
+        "uri150": "https://i.discogs.com/7Clha0TBXZyZx26I1G85BbwhYkN4UV2TnMedt3p9Kms/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjQw/LTc4NTYuanBlZw.jpeg",
+        "width": 600,
+        "height": 600
+      },
+      {
+        "type": "secondary",
+        "uri": "https://i.discogs.com/W3kCURCuQ637ycGHJUk5vESDxElXo_KUomnk9CMAaVE/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjQ2/LTUzNzYuanBlZw.jpeg",
+        "resource_url": "https://i.discogs.com/W3kCURCuQ637ycGHJUk5vESDxElXo_KUomnk9CMAaVE/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjQ2/LTUzNzYuanBlZw.jpeg",
+        "uri150": "https://i.discogs.com/Z0pSQ67rhe0e8edrXIvJ3RfJbDyKoFyV1479MPPDZ1s/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjQ2/LTUzNzYuanBlZw.jpeg",
+        "width": 600,
+        "height": 600
+      },
+      {
+        "type": "secondary",
+        "uri": "https://i.discogs.com/hi78doLs21ryEnD-zwCqCdKtDF7av0UbxwWIwdlQNtI/rs:fit/g:sm/q:90/h:601/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjUy/LTI3MTEuanBlZw.jpeg",
+        "resource_url": "https://i.discogs.com/hi78doLs21ryEnD-zwCqCdKtDF7av0UbxwWIwdlQNtI/rs:fit/g:sm/q:90/h:601/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjUy/LTI3MTEuanBlZw.jpeg",
+        "uri150": "https://i.discogs.com/WSUTZ5GWG2UQJBLLXoKilYCMFMNHGaA7wlQjBPfNRiU/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjUy/LTI3MTEuanBlZw.jpeg",
+        "width": 600,
+        "height": 601
+      },
+      {
+        "type": "secondary",
+        "uri": "https://i.discogs.com/2vW-o24kf1OrwTkW9-6U-GeYoHmU9M2XqTOjXLkHGeU/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjY2/LTIxMzQuanBlZw.jpeg",
+        "resource_url": "https://i.discogs.com/2vW-o24kf1OrwTkW9-6U-GeYoHmU9M2XqTOjXLkHGeU/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjY2/LTIxMzQuanBlZw.jpeg",
+        "uri150": "https://i.discogs.com/OVLSlpD-qm83pSeubynXraIddgmvRZaav3vmxQy7WPc/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjY2/LTIxMzQuanBlZw.jpeg",
+        "width": 600,
+        "height": 600
+      },
+      {
+        "type": "secondary",
+        "uri": "https://i.discogs.com/XB5hO58yIM2F3SxDf5Sk3jBlJiSNNy20Oks4ngxG8qY/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjcy/LTUxOTkuanBlZw.jpeg",
+        "resource_url": "https://i.discogs.com/XB5hO58yIM2F3SxDf5Sk3jBlJiSNNy20Oks4ngxG8qY/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjcy/LTUxOTkuanBlZw.jpeg",
+        "uri150": "https://i.discogs.com/GFgv9_38EWxA1oOC777aY8w2qeyaH0H__a1JBnxmVUQ/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjcy/LTUxOTkuanBlZw.jpeg",
+        "width": 600,
+        "height": 600
+      },
+      {
+        "type": "secondary",
+        "uri": "https://i.discogs.com/7N3UcdKa44Mgo9MOMAb3fgWw_dHE5ro2-i5KJpDGGGg/rs:fit/g:sm/q:90/h:599/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjc4/LTM2MTguanBlZw.jpeg",
+        "resource_url": "https://i.discogs.com/7N3UcdKa44Mgo9MOMAb3fgWw_dHE5ro2-i5KJpDGGGg/rs:fit/g:sm/q:90/h:599/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjc4/LTM2MTguanBlZw.jpeg",
+        "uri150": "https://i.discogs.com/PhUnH8jmh-nYR2_kxnBX8FaIXwzdk6ffXCIdc2dP9PE/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjc4/LTM2MTguanBlZw.jpeg",
+        "width": 600,
+        "height": 599
+      },
+      {
+        "type": "secondary",
+        "uri": "https://i.discogs.com/G1gxwqN8SRXOxv1VHvFt3BciDMXDX82OTjopyICIllU/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjg0/LTE5MDQuanBlZw.jpeg",
+        "resource_url": "https://i.discogs.com/G1gxwqN8SRXOxv1VHvFt3BciDMXDX82OTjopyICIllU/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjg0/LTE5MDQuanBlZw.jpeg",
+        "uri150": "https://i.discogs.com/yIf5ftb7gWM-VZVSKFpMKYAR9czaRxq1BGO16Q7-LIs/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjg0/LTE5MDQuanBlZw.jpeg",
+        "width": 600,
+        "height": 600
+      },
+      {
+        "type": "secondary",
+        "uri": "https://i.discogs.com/NeW9QYsVn_gMYLkaDOcsbcJSYUTEsZOU2wO9fJVgmbA/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjkx/LTMxMzMuanBlZw.jpeg",
+        "resource_url": "https://i.discogs.com/NeW9QYsVn_gMYLkaDOcsbcJSYUTEsZOU2wO9fJVgmbA/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjkx/LTMxMzMuanBlZw.jpeg",
+        "uri150": "https://i.discogs.com/FhlcJsCFXqcknDHhxKywBvrcx30hQhWLxX17S1GckYo/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjkx/LTMxMzMuanBlZw.jpeg",
+        "width": 600,
+        "height": 600
+      },
+      {
+        "type": "secondary",
+        "uri": "https://i.discogs.com/2adjnXEmPIy7P4MQVBz8kzQNd1BDS0Vro3NEfWGLAUA/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjk2/LTk3NjIuanBlZw.jpeg",
+        "resource_url": "https://i.discogs.com/2adjnXEmPIy7P4MQVBz8kzQNd1BDS0Vro3NEfWGLAUA/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjk2/LTk3NjIuanBlZw.jpeg",
+        "uri150": "https://i.discogs.com/7xTG2ygCM_FSB_-jZwxn9I-MlwHESQiwmcapXvfAgbk/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNjk2/LTk3NjIuanBlZw.jpeg",
+        "width": 600,
+        "height": 600
+      },
+      {
+        "type": "secondary",
+        "uri": "https://i.discogs.com/EtTMSuAIu0t3joZK-b2fEAAMUT6n-j_HdoAKlXvpdTQ/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNzAy/LTk2MjMuanBlZw.jpeg",
+        "resource_url": "https://i.discogs.com/EtTMSuAIu0t3joZK-b2fEAAMUT6n-j_HdoAKlXvpdTQ/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNzAy/LTk2MjMuanBlZw.jpeg",
+        "uri150": "https://i.discogs.com/EYXltLn5o0K53VE3kxXPPKf91pK7R6i1CkWArYUIqz0/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNzAy/LTk2MjMuanBlZw.jpeg",
+        "width": 600,
+        "height": 600
+      },
+      {
+        "type": "secondary",
+        "uri": "https://i.discogs.com/qrunmTDqMyC49ojstHKIU_2P09B0qtXykvWSWDVSWZc/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNzA3/LTQ4NDYuanBlZw.jpeg",
+        "resource_url": "https://i.discogs.com/qrunmTDqMyC49ojstHKIU_2P09B0qtXykvWSWDVSWZc/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNzA3/LTQ4NDYuanBlZw.jpeg",
+        "uri150": "https://i.discogs.com/PXHyX5drtU7Hfri4Vt3JDfk98SxMzS_mZDM6YUZS0n4/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMzg2NzUxNzA3/LTQ4NDYuanBlZw.jpeg",
+        "width": 600,
+        "height": 600
+      }
+    ],
+    "thumb": "https://i.discogs.com/qI1SZbzdUzOgS1Wjb8c_lOt8v5S5WhbPbfYtTkHYKok/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE5MzE5/NS0xMTYzOTQzODU3/LmpwZWc.jpeg",
+    "estimated_weight": 485,
+    "blocked_from_sale": false
+  }
+}
