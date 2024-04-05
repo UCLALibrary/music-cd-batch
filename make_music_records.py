@@ -1,3 +1,4 @@
+from pathlib import Path
 import api_keys
 import argparse
 from csv import DictReader
@@ -11,6 +12,7 @@ from data_evaluator import (
     get_unique_titles,
     get_usable_worldcat_records,
 )
+from create_marc_record import add_local_fields, write_marc_record
 from searchers.discogs import DiscogsClient
 from searchers.musicbrainz import MusicbrainzClient
 from searchers.worldcat import WorldcatClient
@@ -36,7 +38,13 @@ def main() -> None:
     args = parser.parse_args()
 
     # Get the set of data provided by Music library to use for this process.
-    music_data = get_dicts_from_tsv(args.music_data_file)
+    input_filename = args.music_data_file
+    music_data = get_dicts_from_tsv(input_filename)
+
+    # Get the names of the files where MARC records will be written.
+    worldcat_record_filename = get_marc_filename(input_filename, "oclc")
+    # TODO
+    # original_record_filename = get_marc_filename(input_filename, "orig")
 
     # Initialize the clients used for searching various data sources.
     worldcat_client, discogs_client, musicbrainz_client = get_clients()
@@ -99,9 +107,12 @@ def main() -> None:
         marc_record = get_best_worldcat_record(usable_records)
         if marc_record:
             print(f"\tWinner: OCLC# {get_oclc_number(marc_record)}")
-            # TODO: Enhance marc_record with local fields
+            marc_record = add_local_fields(marc_record, barcode, call_number)
+            write_marc_record(marc_record, filename=worldcat_record_filename)
         else:
             # TODO: Create minimal MARC record from Discogs/Musicbrainz data
+            # marc_record = "TODO"
+            # write_marc_record(marc_record, filename=original_record_filename)
             pass
 
         print(f"Finished row {idx}\n")
@@ -144,6 +155,14 @@ def get_next_data_row(row: dict) -> tuple[str, str, str, str]:
     barcode = row["barcode"].strip().upper()
     official_title = row["title"].strip()
     return upc_code, call_number, barcode, official_title
+
+
+def get_marc_filename(input_filename: str, file_type: str) -> str:
+    """Get the name of the file where MARC records of the given type
+    will be written, based on the input filename.
+    """
+    base = Path(input_filename).stem
+    return f"{base}_{file_type}.mrc"
 
 
 if __name__ == "__main__":

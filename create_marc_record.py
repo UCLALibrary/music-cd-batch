@@ -1,4 +1,5 @@
-from pymarc import Record, Field, Subfield
+from datetime import datetime
+from pymarc import MARCWriter, Record, Field, Subfield
 
 
 def create_base_record() -> Record:
@@ -48,16 +49,6 @@ def create_base_record() -> Record:
     ]
     field_040 = Field(tag="040", indicators=[" ", " "], subfields=subfields_040)
     record.add_field(field_040)
-
-    # 049 ## $a CLUV $l BARCODE
-    subfields_049 = [Subfield("a", "CLUV"), Subfield("l", "BARCODE")]
-    field_049 = Field(tag="049", indicators=[" ", " "], subfields=subfields_049)
-    record.add_field(field_049)
-
-    # 099 ## $a CDA #
-    subfields_099 = [Subfield("a", "CDA #")]
-    field_099 = Field(tag="099", indicators=[" ", " "], subfields=subfields_099)
-    record.add_field(field_099)
 
     # 336 ## $a performed music $b prm $2 rdacontent
     subfields_336 = [
@@ -112,17 +103,40 @@ def create_base_record() -> Record:
     field_347_2 = Field(tag="347", indicators=[" ", " "], subfields=subfields_347_2)
     record.add_field(field_347_2)
 
+    return record
+
+
+def add_local_fields(record: Record, barcode: str, call_number: str) -> Record:
+    """Add local fields (0x9, 9xx) to a MARC record. These are added to all
+    records, regardless of source.
+    """
+
+    # Records obtained via Worldcat Metadata API already have 049 $a CLUM... remove that.
+    # This is safe if 049 does not exist.
+    record.remove_fields("049")
+
+    # 049 ## $a CLUV $l BARCODE
+    subfields_049 = [Subfield("a", "CLUV"), Subfield("l", barcode)]
+    field_049 = Field(tag="049", indicators=[" ", " "], subfields=subfields_049)
+    record.add_ordered_field(field_049)
+
+    # 099 ## $a CDA #
+    subfields_099 = [Subfield("a", call_number)]
+    field_099 = Field(tag="099", indicators=[" ", " "], subfields=subfields_099)
+    record.add_ordered_field(field_099)
+
     # 962 ## $a cmc $b meherbatch $c YYYYMMDD $d 3 $k meherorig $9 LOCAL
+    yyyymmdd = datetime.today().strftime("%Y%m%d")
     subfields_962 = [
         Subfield("a", "cmc"),
         Subfield("b", "meherbatch"),
-        Subfield("c", "YYYYMMDD"),
+        Subfield("c", yyyymmdd),
         Subfield("d", "3"),
         Subfield("k", "meherorig"),
         Subfield("9", "LOCAL"),
     ]
     field_962 = Field(tag="962", indicators=[" ", " "], subfields=subfields_962)
-    record.add_field(field_962)
+    record.add_ordered_field(field_962)
 
     # 966 ## $a MEHER $b Donovan Meher Collection $9 LOCAL
     subfields_966 = [
@@ -131,6 +145,15 @@ def create_base_record() -> Record:
         Subfield("9", "LOCAL"),
     ]
     field_966 = Field(tag="966", indicators=[" ", " "], subfields=subfields_966)
-    record.add_field(field_966)
+    record.add_ordered_field(field_966)
 
     return record
+
+
+def write_marc_record(record: Record, filename: str) -> None:
+    """Write the record to a file in binary MARC format. Records are
+    appended to the file.
+    """
+    with open(filename, "ab") as f:
+        writer = MARCWriter(f)
+        writer.write(record)
