@@ -159,7 +159,7 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
     # Lang (008/35-37) - zxx
     new_008 = year_008[:35] + "zxx" + year_008[38:]
     base_record.remove_fields("008")
-    base_record.add_field(Field(tag="008", data=new_008))
+    base_record.add_ordered_field(Field(tag="008", data=new_008))
 
     # 024 8# $a IDENTIFIERS\VALUE (only for type: Barcode)
     # If no barcode element, do not include field.
@@ -173,7 +173,7 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
                 field_024 = Field(
                     tag="024", indicators=["8", " "], subfields=subfields_024
                 )
-                base_record.add_field(field_024)
+                base_record.add_ordered_field(field_024)
 
     # 028 02 $a LABELS\CATNO $b LABELS\NAME
     # If no labels\catno element, do not include field.
@@ -189,7 +189,7 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
                     Subfield("b", label["name"]),
                 ]
             field_028 = Field(tag="028", indicators=["0", "2"], subfields=subfields_028)
-            base_record.add_field(field_028)
+            base_record.add_ordered_field(field_028)
 
     # 245 00 $a TITLE / $c ARTISTS\NAME
     title_245 = data["title"]
@@ -214,7 +214,7 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
         field_245 = Field(tag="245", indicators=["0", "3"], subfields=subfields_245)
     else:
         field_245 = Field(tag="245", indicators=["0", "0"], subfields=subfields_245)
-    base_record.add_field(field_245)
+    base_record.add_ordered_field(field_245)
 
     # 264 #1 $a [Place of publication not identified] : $b LABELS\NAME, $c [RELEASED]
     # For DATE - 1st 4 digits only
@@ -239,7 +239,7 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
         Subfield("c", "[" + date_264 + "]"),
     ]
     field_264 = Field(tag="264", indicators=[" ", "1"], subfields=subfields_264)
-    base_record.add_field(field_264)
+    base_record.add_ordered_field(field_264)
 
     # 300 ## $a FORMATS\QTY audio disc : $b digital ; $c 4 3/4 in.
     # IF FORMATS\QTY>1, THEN $a FORMATS\QTY audio discs : $b digital ; $c 4 3/4 in.
@@ -261,13 +261,13 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
         Subfield("c", "4 3/4 in."),
     ]
     field_300 = Field(tag="300", indicators=[" ", " "], subfields=subfields_300)
-    base_record.add_field(field_300)
+    base_record.add_ordered_field(field_300)
 
     # 500 ## $a Title from Discogs database.
     # same as 245 $a
     subfields_500 = [Subfield("a", title_245)]
     field_500 = Field(tag="500", indicators=[" ", " "], subfields=subfields_500)
-    base_record.add_field(field_500)
+    base_record.add_ordered_field(field_500)
 
     # 505 0# $a TRACKLIST\TITLE -- $a TRACKLIST\TITLE -- $a TRACKLIST\TITLE […].
     # If no tracklist element, do not include field.
@@ -283,7 +283,7 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
         subfields_505.append(Subfield("a", last_track_title + "."))
 
         field_505 = Field(tag="505", indicators=["0", " "], subfields=subfields_505)
-        base_record.add_field(field_505)
+        base_record.add_ordered_field(field_505)
 
     # 653 #6 $a GENRES
     # include all genres in $a subfields
@@ -292,7 +292,7 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
         for genre in data["full_json"]["genres"]:
             subfields_653.append(Subfield("a", genre))
             field_653 = Field(tag="653", indicators=[" ", "6"], subfields=subfields_653)
-        base_record.add_field(field_653)
+        base_record.add_ordered_field(field_653)
 
     # 720 ## $a ARTISTS_SORT.
     # single string fields with possible multiple artists
@@ -300,7 +300,7 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
     # format: $a ARTISTS_SORT.
     subfields_720 = [Subfield("a", artist_720 + ".")]
     field_720 = Field(tag="720", indicators=[" ", " "], subfields=subfields_720)
-    base_record.add_field(field_720)
+    base_record.add_ordered_field(field_720)
 
     return base_record
 
