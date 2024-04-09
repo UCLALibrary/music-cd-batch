@@ -1,0 +1,87 @@
+{
+  "title": "Soliloquy for Lilith",
+  "artist": "Nurse With Wound",
+  "publisher_number": "UD092",
+  "full_json": {
+    "id": "2565af5a-0337-383f-bad2-afbb25eb3389",
+    "ext:score": "100",
+    "title": "Soliloquy for Lilith",
+    "status": "Official",
+    "disambiguation": "gold foil",
+    "packaging": "Box",
+    "text-representation": {
+      "language": "eng",
+      "script": "Latn"
+    },
+    "artist-credit": [
+      {
+        "name": "Nurse With Wound",
+        "artist": {
+          "id": "ac18f936-0086-4bd1-a8ea-629e2c35a906",
+          "name": "Nurse With Wound",
+          "sort-name": "Nurse With Wound",
+          "disambiguation": "UK band"
+        }
+      }
+    ],
+    "release-group": {
+      "id": "f88e0e2f-50cf-3eaa-ad4c-c83a6521312c",
+      "type": "Album",
+      "title": "Soliloquy for Lilith",
+      "primary-type": "Album"
+    },
+    "date": "2003",
+    "country": "GB",
+    "release-event-list": [
+      {
+        "date": "2003",
+        "area": {
+          "id": "8a754a16-0027-3a29-b6d7-2b40ea0481ed",
+          "name": "United Kingdom",
+          "sort-name": "United Kingdom",
+          "iso-3166-1-code-list": [
+            "GB"
+          ]
+        }
+      }
+    ],
+    "barcode": "5021958414720",
+    "asin": "B0000CG46S",
+    "label-info-list": [
+      {
+        "catalog-number": "UD092",
+        "label": {
+          "id": "747648d6-5db9-4530-918f-86c15843497d",
+          "name": "United Dairies"
+        }
+      }
+    ],
+    "medium-list": [
+      {
+        "format": "CD",
+        "disc-list": [],
+        "disc-count": 2,
+        "track-list": [],
+        "track-count": 3
+      },
+      {
+        "format": "CD",
+        "disc-list": [],
+        "disc-count": 2,
+        "track-list": [],
+        "track-count": 3
+      },
+      {
+        "format": "CD",
+        "disc-list": [],
+        "disc-count": 1,
+        "track-list": [],
+        "track-count": 2
+      }
+    ],
+    "medium-track-count": 8,
+    "medium-count": 3,
+    "tag-list": [],
+    "artist-credit-phrase": "Nurse With Wound"
+  }
+}
