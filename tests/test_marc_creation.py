@@ -2,7 +2,12 @@ import unittest
 import json
 
 from pymarc import Subfield
-from create_marc_record import add_local_fields, create_base_record, add_discogs_data
+from create_marc_record import (
+    add_local_fields,
+    create_base_record,
+    add_discogs_data,
+    add_musicbrainz_data,
+)
 
 
 class TestBaseRecord(unittest.TestCase):
@@ -119,6 +124,80 @@ class TestDiscogsFields(unittest.TestCase):
         fld653 = self.record.get("653")
         self.assertEqual(fld653.subfields[0].code, "a")
         self.assertEqual(fld653.subfields[0].value, "Electronic")
+
+    def test_field_720(self):
+        fld720 = self.record.get("720")
+        self.assertEqual(fld720.subfields[0].code, "a")
+        self.assertEqual(fld720.subfields[0].value, "Nurse With Wound.")
+
+
+class TestMusicBrainzFields(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Create simulated record for use in all tests in this class.
+        base_record = create_base_record()
+        cls.record = add_local_fields(
+            base_record, barcode="FAKE BARCODE", call_number="FAKE CALL NUMBER"
+        )
+        with open("tests/sample_data/formatted_musicbrainz_sample.data") as f:
+            data = json.load(f)
+        cls.record = add_musicbrainz_data(cls.record, data)
+
+    def test_field_024(self):
+        fld024 = self.record.get("024")
+        # one barcode in the sample data
+        expected_subfields = [
+            Subfield(code="a", value="5021958414720"),
+        ]
+        self.assertEqual(fld024.subfields, expected_subfields)
+
+    def test_field_028(self):
+        fld028 = self.record.get("028")
+        self.assertEqual(fld028.subfields[0].code, "a")
+        self.assertEqual(fld028.subfields[0].value, "UD092")
+        self.assertEqual(fld028.subfields[1].code, "b")
+        self.assertEqual(fld028.subfields[1].value, "United Dairies")
+
+    def test_field_245(self):
+        fld245 = self.record.get("245")
+        self.assertEqual(fld245.subfields[0].code, "a")
+        # musicbrainz data has different capitalization than discogs
+        self.assertEqual(fld245.subfields[0].value, "Soliloquy for Lilith /")
+        self.assertEqual(fld245.subfields[1].code, "c")
+        self.assertEqual(fld245.subfields[1].value, "Nurse With Wound.")
+        self.assertEqual(fld245.indicators, ["0", "0"])
+
+    def test_field_264(self):
+        fld264 = self.record.get("264")
+        self.assertEqual(fld264.subfields[0].code, "a")
+        self.assertEqual(
+            fld264.subfields[0].value, "[Place of publication not identified] :"
+        )
+        self.assertEqual(fld264.subfields[1].code, "b")
+        self.assertEqual(fld264.subfields[1].value, "United Dairies,")
+        self.assertEqual(fld264.subfields[2].value, "[2003]")
+
+    def test_field_300(self):
+        fld300 = self.record.get("300")
+        self.assertEqual(fld300.subfields[0].code, "a")
+        self.assertEqual(fld300.subfields[0].value, "3 audio discs :")
+        self.assertEqual(fld300.subfields[1].code, "b")
+        self.assertEqual(fld300.subfields[1].value, "digital ;")
+        self.assertEqual(fld300.subfields[2].value, "4 3/4 in.")
+
+    def test_field_500(self):
+        fld500 = self.record.get("500")
+        self.assertEqual(fld500.subfields[0].code, "a")
+        # musicbrainz data has different capitalization than discogs
+        self.assertEqual(
+            fld500.subfields[0].value,
+            "Soliloquy for Lilith",
+        )
+
+    def test_field_653(self):
+        fld653 = self.record.get("653")
+        # MusicBrainz record doesn't have genre information
+        self.assertEqual(fld653, None)
 
     def test_field_720(self):
         fld720 = self.record.get("720")
