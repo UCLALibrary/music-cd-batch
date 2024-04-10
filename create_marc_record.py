@@ -171,7 +171,10 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
     if data["full_json"]["identifiers"]:
         for identifier in data["full_json"]["identifiers"]:
             # include only barcode elements without description: Text.
-            if identifier["type"] == "Barcode" and identifier["description"] != "Text":
+            if (
+                identifier.get("type") == "Barcode"
+                and identifier.get("description") != "Text"
+            ):
                 # Normalize by removing spaces from value
                 value = identifier["value"].replace(" ", "")
                 subfields_024 = [Subfield("a", value)]
