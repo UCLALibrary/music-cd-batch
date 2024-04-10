@@ -37,7 +37,10 @@ def create_base_record() -> Record:
     # TrAr (008/33) - n Not arrangement or transposition or not specified
     # MRec (008/38) - # (Not modified)
     # Srce (008/39) - d (Other)
-    record.add_field(Field(tag="008", data="YYMMDDs||||    xx ||nn           n ||| d"))
+    yymmdd = get_yymmdd()
+    record.add_field(
+        Field(tag="008", data=f"{yymmdd}s||||    xx ||nn           n ||| d")
+    )
 
     # 040 ## $a CLU $b eng $c CLU
     # add_subfield method doesn't appear to work with newly created fields,
@@ -272,19 +275,14 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
     field_500 = Field(tag="500", indicators=[" ", " "], subfields=subfields_500)
     base_record.add_ordered_field(field_500)
 
-    # 505 0# $a TRACKLIST\TITLE -- $a TRACKLIST\TITLE -- $a TRACKLIST\TITLE […].
+    # 505 0# $a TRACKLIST\TITLE -- TRACKLIST\TITLE -- TRACKLIST\TITLE […].
     # If no tracklist element, do not include field.
     if data["full_json"]["tracklist"]:
-        subfields_505 = []
-        # last $a is formatted differently
-        for track in data["full_json"]["tracklist"][:-1]:
-            # format:  $a TRACKLIST\TITLE <space> <hyphen> <hyphen> <space> TRACKLIST\TITLE<period>
-            track_title = track["title"]
-            subfields_505.append(Subfield("a", track_title + " --"))
-        # get last subfield and format
-        last_track_title = data["full_json"]["tracklist"][-1]["title"]
-        subfields_505.append(Subfield("a", last_track_title + "."))
-
+        # Grab all track titles.
+        track_titles = [track["title"] for track in data["full_json"]["tracklist"]]
+        # Format into one string, separated by " -- ", ending with period.
+        contents = " -- ".join(track_titles) + "."
+        subfields_505 = [Subfield("a", contents)]
         field_505 = Field(tag="505", indicators=["0", " "], subfields=subfields_505)
         base_record.add_ordered_field(field_505)
 
@@ -448,6 +446,20 @@ def add_musicbrainz_data(base_record: Record, data: dict) -> Record:
     return base_record
 
 
+def create_discogs_record(data: dict) -> Record:
+    """Convenience method to create MARC record from base record
+    and Discogs data."""
+    base_record = create_base_record()
+    return add_discogs_data(base_record, data)
+
+
+def create_musicbrainz_record(data: dict) -> Record:
+    """Convenience method to create MARC record from base record
+    and MusicBrainz data."""
+    base_record = create_base_record()
+    return add_musicbrainz_data(base_record, data)
+
+
 def write_marc_record(record: Record, filename: str) -> None:
     """Write the record to a file in binary MARC format. Records are
     appended to the file.
@@ -455,3 +467,13 @@ def write_marc_record(record: Record, filename: str) -> None:
     with open(filename, "ab") as f:
         writer = MARCWriter(f)
         writer.write(record)
+
+
+def get_yyyymmdd() -> str:
+    """Get current date as YYYYMMDD (4-digit year)."""
+    return datetime.today().strftime("%Y%m%d")
+
+
+def get_yymmdd() -> str:
+    """Get current date as YYMMDD (2-digit year only)."""
+    return datetime.today().strftime("%y%m%d")

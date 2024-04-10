@@ -43,6 +43,39 @@ are installed in the container.
    ```
 4. Some data sources require API keys. Get a copy of `api_keys.py` from a teammate and put it in the top level directory of the project.
 
+### Input and General Flow
+
+The program requires a tab-delimited file with one header row, with column names:
+- UPC
+- call number
+- barcode
+- title
+
+The data rows are provided by Music library staff. They transcribe the UPC and title from each CD, then add a local call number and barcode.
+
+The program searches Worldcat, Discogs, and MusicBrainz for each UPC.  If no usable Worldcat records are found via a "standard number" search by UPC,
+the program obtains catalog numbers from Discogs and MusicBrainz for the UPC and then searches Worldcat again, this time using the
+"music publisher number" index, for each catalog number found.
+
+As a sanity check, the "official" title provided for each CD by Music library staff is compared with titles from records found in the above sources.
+Worldcat records are only used when titles are similar enough, to reduce false positive matches.
+
+#### Command-line arguments
+
+```
+make_music_records.py [-h] [-s START_INDEX] [-e END_INDEX] [--log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}] music_data_file
+```
+
+### Output
+
+Given an input file `batch_016_20240229.tsv`, the program will generate a log file and up to two files of MARC records.
+- Log file: `batch_016_20240229.log`: Contains details about each search, evaluation of data found, and more.
+- MARC file: `batch_016_20240229_oclc.mrc`: Contains the "best" OCLC Worldcat record found (if any) for each search term.
+- MARC file: `batch_016_20240229_orig.mrc`: Contains minimal records created from Discogs or MusicBrainz data, if no usable Worldcat record was found.
+
+Log files and MARC files are appended to, if the program is run multiple times with the same input file. This allows for resuming an
+interrupted run.  Be sure there's no overlap, or MARC files could contain duplicate records.
+
 ### Testing
 
 Tests focus on code which has significant side effects or implements custom logic.

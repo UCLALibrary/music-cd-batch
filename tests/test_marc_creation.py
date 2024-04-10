@@ -117,8 +117,12 @@ class TestDiscogsFields(unittest.TestCase):
 
     def test_field_505(self):
         fld505 = self.record.get("505")
-        self.assertEqual(len(fld505.subfields), 8)
+        # All track lists go into one big 505 $a.
+        self.assertEqual(len(fld505.subfields), 1)
         self.assertEqual(fld505.subfields[0].code, "a")
+        # The sample record has 8 tracks, separated by " -- ".
+        tracks = fld505.subfields[0].value.split(" -- ")
+        self.assertEqual(len(tracks), 8)
 
     def test_field_653(self):
         fld653 = self.record.get("653")
