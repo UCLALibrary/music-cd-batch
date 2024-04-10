@@ -2,12 +2,15 @@
 and determine which to use for generating MARC records.
 """
 
+import logging
 import string
 from strsimpy import NormalizedLevenshtein
 from pymarc import Record
 from searchers.discogs import DiscogsClient
 from searchers.musicbrainz import MusicbrainzClient
 from searchers.worldcat import WorldcatClient
+
+logger = logging.getLogger()
 
 
 def get_usable_worldcat_records(
@@ -39,7 +42,7 @@ def get_worldcat_records(
         oclc_numbers = client.get_oclc_numbers(search_results)
         marc_records = client.get_records(oclc_numbers)
         all_records.extend(marc_records)
-    print(f"\tFound {len(all_records)} Worldcat records")
+    logger.info(f"\tFound {len(all_records)} Worldcat records")
     return all_records
 
 
@@ -65,8 +68,8 @@ def any_record_has_clu(client: WorldcatClient, records: list[Record]) -> bool:
     for record in records:
         oclc_number = get_oclc_number(record)
         if client.is_held_by_us(oclc_number):
-            print(f"\tREJECTING ALL RECORDS: OCLC {oclc_number} is held by CLU")
-            print(f"\tWorldcat Title -> {record.title}")
+            logger.info(f"\tREJECTING ALL RECORDS: OCLC {oclc_number} is held by CLU")
+            logger.info(f"\tWorldcat Title -> {record.title}")
             return True
     # If we made it to here, no records are held by CLU.
     return False
@@ -80,11 +83,11 @@ def get_usable_records(records: list[Record], unique_titles: set) -> list[Record
     for record in records:
         # For debugging
         oclc_number = get_oclc_number(record)
-        print(f"\t\tChecking OCLC# {oclc_number} -> {record.title}")
+        logger.info(f"\t\tChecking OCLC# {oclc_number} -> {record.title}")
         if record_is_usable(record) and title_is_close_enough(record, unique_titles):
             records_to_keep.append(record)
 
-    print(f"\tFound {len(records_to_keep)} usable Worldcat records")
+    logger.info(f"\tFound {len(records_to_keep)} usable Worldcat records")
     return records_to_keep
 
 
@@ -155,19 +158,19 @@ def title_is_close_enough(record: Record, titles: set) -> bool:
     for title in titles:
         # Similarity score ranges from 0.0 (completely different) to 1.0 (identical).
         score = get_title_similarity_score(full_title, title)
-        print(f"\t\t{score:.2f}: {full_title=} -> {title=}")
+        logger.info(f"\t\t{score:.2f}: {full_title=} -> {title=}")
         # This threshold was used in previous phase.
         if score < 0.4:
             # Full title might not match, but primary (245 $a) title might.
             short_title = get_marc_short_title(record)
             if short_title != full_title:
                 score = get_title_similarity_score(short_title, title)
-                print(f"\t\t{score:.2f}: {short_title=} -> {title=}")
+                logger.info(f"\t\t{score:.2f}: {short_title=} -> {title=}")
                 # Still too different?
                 if score < 0.4:
-                    print(f"\tWarning: Titles are too different: {score:.2f}")
-                    print(f"\t\tMARC Title : {full_title} ({oclc_number})")
-                    print(f"\t\tOther Title: {title}")
+                    logger.info(f"\tWarning: Titles are too different: {score:.2f}")
+                    logger.info(f"\t\tMARC Title : {full_title} ({oclc_number})")
+                    logger.info(f"\t\tOther Title: {title}")
         total_score += score
     if len(titles) > 0:
         average_score = total_score / len(titles)
@@ -176,13 +179,13 @@ def title_is_close_enough(record: Record, titles: set) -> bool:
         average_score = 1.0
     # This threshold was used in previous phase.
     if average_score < 0.37:
-        print(
+        logger.info(
             f"\t\tREJECTED OCLC {oclc_number}: Titles are too different: {average_score:.2f}"
         )
         return False
     else:
         # Titles are close enough
-        print(f"\tAVERAGE SCORE: {average_score:.2f}")
+        logger.info(f"\tAVERAGE SCORE: {average_score:.2f}")
         return True
 
 
@@ -235,7 +238,7 @@ def record_type_is_ok(record: Record) -> bool:
     oclc_number = get_oclc_number(record)
     record_type = record.leader[6]
     if record_type not in "ij":
-        print(f"\tREJECTED OCLC {oclc_number}: bad record type '{record_type}'")
+        logger.info(f"\tREJECTED OCLC {oclc_number}: bad record type '{record_type}'")
         return False
     else:
         return True
@@ -249,7 +252,7 @@ def form_of_item_is_ok(record: Record) -> bool:
     oclc_number = get_oclc_number(record)
     form_of_item = record.get("008").data[23]
     if form_of_item == "o":
-        print(
+        logger.info(
             f"\tREJECTED OCLC {oclc_number}: bad 008/23 (form of item) '{form_of_item}'"
         )
         return False
@@ -270,10 +273,12 @@ def cataloging_language_is_ok(record: Record) -> bool:
     if f040:
         cat_lang = f040.get("b")
         if cat_lang != "eng":
-            print(f"\tREJECTED OCLC {oclc_number}: cataloging language '{cat_lang}'")
+            logger.info(
+                f"\tREJECTED OCLC {oclc_number}: cataloging language '{cat_lang}'"
+            )
             is_ok = False
     else:
-        print(
+        logger.info(
             f"\tREJECTED OCLC {oclc_number}: no 040 field to check cataloging language"
         )
         is_ok = False
@@ -304,17 +309,16 @@ def compare_records(record1: Record, record2: Record) -> Record:
     # First, compare encoding levels; best wins 5 points.
     record1_elvl_score = get_encoding_level_score(record1)
     record2_elvl_score = get_encoding_level_score(record2)
-    # If encoding level scores are the same, check number of Worldcat holdings
-    # to break the tie.
-    # TODO: bookops package, and Worldcat Metadata API in general, don't support
+    # In the past, we used the number of Worldcat holdings to break ties
+    # between records with the same encoding levels.
+    # The bookops package, and Worldcat Metadata API in general, don't support
     # getting number of holdings - only the Search API does that.
-    # 2024-03-18 akohler asked Hermine how important this is now.
+    # Confirmed we can live without this tiebreaker.
 
     # For now, return the record with the best encoding level score;
     # if record1 and record2 tie on this, return record1.
     if record1_elvl_score >= record2_elvl_score:
-        # TODO: Remove these prints or use logging.debug
-        print(
+        logger.debug(
             (
                 f"\t\t{get_oclc_number(record1)} ({record1_elvl_score}) beats "
                 f"{get_oclc_number(record2)} ({record2_elvl_score})"
@@ -322,7 +326,7 @@ def compare_records(record1: Record, record2: Record) -> Record:
         )
         return record1
     else:
-        print(
+        logger.debug(
             (
                 f"\t\t{get_oclc_number(record2)} ({record1_elvl_score}) beats "
                 f"{get_oclc_number(record1)} ({record1_elvl_score})"
@@ -341,3 +345,32 @@ def get_encoding_level_score(record: Record) -> int:
     # str.find() returns an integer position if found, or -1 if not.
     elvl_values = "3LMK71I4#"
     return elvl_values.find(encoding_level)
+
+
+def get_marc_problems(record: Record) -> list[str]:
+    """Capture problems with MARC record we're keeping,
+    for later review / cleanup.
+
+    Returns a list of messages for use by caller.
+    """
+    messages = []
+    # Check for specific individual fields first, reporting on each.
+    for tag in ["007", "300", "650"]:
+        if not record.get_fields(tag):
+            messages.append(f"No {tag} field")
+
+    # Check for groups of related field, reporting on each group.
+    for tag_group in ["100/110/700/710", "260/264", "500/505/511/518"]:
+        tags = tag_group.split("/")
+        # get_fields() needs list of tags unpacked into positional args.
+        if not record.get_fields(*tags):
+            messages.append(f"No {tag_group} fields")
+
+    # Check for 490 $v, meaning it's probably a multi-CD set.
+    flds_490 = record.get_fields("490")
+    for fld in flds_490:
+        sfd_490v = fld.get_subfields("v")
+        if sfd_490v:
+            messages.append(f"490 $v found: {sfd_490v}")
+
+    return messages
