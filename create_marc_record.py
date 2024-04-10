@@ -316,7 +316,7 @@ def add_musicbrainz_data(base_record: Record, data: dict) -> Record:
     # Dates (008/07-10) - DATE
     # If no date element, leave as is
     new_008 = base_record.get_fields("008")[0].data
-    if data["full_json"]["date"]:
+    if "date" in data["full_json"]:
         date_008 = data["full_json"]["date"][0:4]
         current_008 = base_record.get_fields("008")[0].data
         new_008 = current_008[:7] + date_008 + current_008[11:]
@@ -341,15 +341,16 @@ def add_musicbrainz_data(base_record: Record, data: dict) -> Record:
     # 028 02 $a LABEL-INFO\CATALOG-NUMBER $b LABEL-INFO\LABEL\NAME
     # If no label-info\catalog-number element, do not include field.
     # If there are multiple label-info\catalog-number elements, create multiple 028 fields.
-    for label_info in data["full_json"]["label-info-list"]:
-        subfields_028 = []
-        if label_info["catalog-number"]:
-            subfields_028.append(Subfield("a", label_info["catalog-number"]))
-            # If no label-info\label\name element, do not include $b.
-            if label_info["label"]["name"]:
-                subfields_028.append(Subfield("b", label_info["label"]["name"]))
-        field_028 = Field(tag="028", indicators=["0", "2"], subfields=subfields_028)
-        base_record.add_ordered_field(field_028)
+    if "label-info-list" in data["full_json"]:
+        for label_info in data["full_json"]["label-info-list"]:
+            subfields_028 = []
+            if label_info["catalog-number"]:
+                subfields_028.append(Subfield("a", label_info["catalog-number"]))
+                # If no label-info\label\name element, do not include $b.
+                if label_info["label"]["name"]:
+                    subfields_028.append(Subfield("b", label_info["label"]["name"]))
+            field_028 = Field(tag="028", indicators=["0", "2"], subfields=subfields_028)
+            base_record.add_ordered_field(field_028)
 
     # 245 00 $a TITLE / $c ARTIST-CREDIT\ARTIST\NAME.
     title_245 = data["title"]
@@ -378,13 +379,16 @@ def add_musicbrainz_data(base_record: Record, data: dict) -> Record:
 
     # 264 #1 $a [Place of publication not identified] : $b LABEL-INFO\LABEL\NAME, $c [DATE]
     # For DATE - 1st 4 digits only
+    # If no date element, fill in $c with “[date of publication not identified]”
+    if "date" in data["full_json"]:
+        date_264 = data["full_json"]["date"][0:4]
+    else:
+        date_264 = "[date of publication not identified]"
     # If no label-info\label\name element, fill in $b with “[publisher not identified]”
     # If there are multiple label-info\label\name elements, take only the first instance.
-    # If no date element, fill in $c with “[date of publication not identified]”
-    date_264 = data["full_json"]["date"][0:4]
-    if data["full_json"]["label-info-list"]:
+    if "label-info-list" in data["full_json"]:
         label_info = data["full_json"]["label-info-list"][0]
-        if label_info["label"]["name"]:
+        if "name" in label_info["label"]:
             publisher = label_info["label"]["name"]
         else:
             publisher = "[publisher not identified]"

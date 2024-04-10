@@ -35,19 +35,21 @@ class MusicbrainzClient:
 
     def parse_data(self, data: list) -> list:
         """Parse MusicBrainz list of releases to pull out data for future use.
-        Each dictionary contains title, artist, publisher_number, and full_json of the
-        original response.
+        Each dictionary contains title, artist, publisher_number (if available),
+        and full_json of the original response.
         """
         output_dict_list = []
         for release in data:
             release_dict = {
                 "title": release["title"],
                 "artist": release["artist-credit-phrase"],
-                "publisher_number": self.get_first_catalog_number(
-                    release["label-info-list"]
-                ),
                 "full_json": release,
             }
+            # Some releases have no label-info-list.
+            if "label-info-list" in release:
+                release_dict["publisher_number"] = self.get_first_catalog_number(
+                    release["label-info-list"]
+                )
             output_dict_list.append(release_dict)
         return output_dict_list
 
