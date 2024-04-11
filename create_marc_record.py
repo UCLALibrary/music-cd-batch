@@ -109,7 +109,9 @@ def create_base_record() -> Record:
     return record
 
 
-def add_local_fields(record: Record, barcode: str, call_number: str) -> Record:
+def add_local_fields(
+    record: Record, barcode: str, call_number: str, has_cases: bool = True
+) -> Record:
     """Add local fields (0x9, 9xx) to a MARC record. These are added to all
     records, regardless of source.
     """
@@ -149,6 +151,16 @@ def add_local_fields(record: Record, barcode: str, call_number: str) -> Record:
     ]
     field_966 = Field(tag="966", indicators=[" ", " "], subfields=subfields_966)
     record.add_ordered_field(field_966)
+
+    # For disks without cases, add 590
+    # 590 ## UCLA Music Library copy lacks container insert. $9 LOCAL
+    if not has_cases:
+        subfields_590 = [
+            Subfield("a", "UCLA Music Library copy lacks container insert."),
+            Subfield("9", "LOCAL"),
+        ]
+        field_590 = Field(tag="590", indicators=[" ", " "], subfields=subfields_590)
+        record.add_ordered_field(field_590)
 
     return record
 

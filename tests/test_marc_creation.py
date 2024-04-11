@@ -53,6 +53,25 @@ class TestLocalFields(unittest.TestCase):
         ]
         self.assertEqual(fld049.subfields, expected_subfields)
 
+    def test_590_with_cases(self):
+        # default test case is with cases, so we should not have a 590 field
+        fld590 = self.record.get("590")
+        self.assertEqual(fld590, None)
+
+    def test_590_without_cases(self):
+        base_record = create_base_record()
+        record = add_local_fields(
+            base_record,
+            barcode="FAKE BARCODE",
+            call_number="FAKE CALL NUMBER",
+            has_cases=False,
+        )
+        fld590 = record.get("590")
+        self.assertEqual(fld590.subfields[0].code, "a")
+        self.assertEqual(
+            fld590.subfields[0].value, "UCLA Music Library copy lacks container insert."
+        )
+
 
 class TestDiscogsFields(unittest.TestCase):
     @classmethod
