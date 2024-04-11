@@ -51,9 +51,8 @@ def main() -> None:
         help="Set the logging level",
     )
     # Optional flag to include 590 field in MARC records for CDs without cases.
-    # Default is that we have cases, so no 590 field is added.
-    # argparse.BooleanOptionalAction gives us --no-cases to set the flag to False.
-    parser.add_argument("--cases", action=argparse.BooleanOptionalAction)
+    # store_true means the flag is set to True if the option is present, False otherwise.
+    parser.add_argument("--no-cases", help="CDs do not have cases", action="store_true")
     args = parser.parse_args()
 
     input_filename = args.music_data_file
@@ -160,7 +159,7 @@ def main() -> None:
         # Finally, add local fields and write the record to file, or log a message.
         if marc_record:
             marc_record = add_local_fields(
-                marc_record, barcode, call_number, args.cases
+                marc_record, barcode, call_number, args.no_cases
             )
             write_marc_record(marc_record, filename=marc_filename)
         else:

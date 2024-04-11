@@ -64,7 +64,7 @@ class TestLocalFields(unittest.TestCase):
             base_record,
             barcode="FAKE BARCODE",
             call_number="FAKE CALL NUMBER",
-            has_cases=False,
+            no_cases=True,
         )
         fld590 = record.get("590")
         self.assertEqual(fld590.subfields[0].code, "a")
