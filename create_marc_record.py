@@ -284,9 +284,9 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
     field_300 = Field(tag="300", indicators=[" ", " "], subfields=subfields_300)
     base_record.add_ordered_field(field_300)
 
-    # 500 ## $a Title from Discogs database.
-    # same as 245 $a
-    subfields_500 = [Subfield("a", title_245)]
+    # 500 ## $a Record generated from Discogs database.
+    # constant value
+    subfields_500 = [Subfield("a", "Record generated from Discogs database.")]
     field_500 = Field(tag="500", indicators=[" ", " "], subfields=subfields_500)
     base_record.add_ordered_field(field_500)
 
@@ -440,9 +440,9 @@ def add_musicbrainz_data(base_record: Record, data: dict) -> Record:
     field_300 = Field(tag="300", indicators=[" ", " "], subfields=subfields_300)
     base_record.add_ordered_field(field_300)
 
-    # 500 ## $a Title from MusicBrainz database.
-    # same as 245 $a
-    subfields_500 = [Subfield("a", title_245)]
+    # 500 ## $a Record generated from MusicBrainz database.
+    # constant value
+    subfields_500 = [Subfield("a", "Record generated from MusicBrainz database.")]
     field_500 = Field(tag="500", indicators=[" ", " "], subfields=subfields_500)
     base_record.add_ordered_field(field_500)
 
