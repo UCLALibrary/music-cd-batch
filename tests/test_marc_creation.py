@@ -131,7 +131,7 @@ class TestDiscogsFields(unittest.TestCase):
         self.assertEqual(fld500.subfields[0].code, "a")
         self.assertEqual(
             fld500.subfields[0].value,
-            "Soliloquy For Lilith",
+            "Record generated from Discogs database.",
         )
 
     def test_field_505(self):
@@ -211,10 +211,9 @@ class TestMusicBrainzFields(unittest.TestCase):
     def test_field_500(self):
         fld500 = self.record.get("500")
         self.assertEqual(fld500.subfields[0].code, "a")
-        # musicbrainz data has different capitalization than discogs
         self.assertEqual(
             fld500.subfields[0].value,
-            "Soliloquy for Lilith",
+            "Record generated from MusicBrainz database.",
         )
 
     def test_field_653(self):
