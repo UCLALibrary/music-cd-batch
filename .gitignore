@@ -22,6 +22,7 @@ oclc_test
 # Exclude logs and other output
 *.log
 *.out
+*.txt
 
 # Cache files
 __pycache__

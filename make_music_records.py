@@ -138,22 +138,26 @@ def main() -> None:
             # Report on problems with this Worldcat record, if any;
             # these may require cataloger review, but we'll still use the record.
             marc_problems = get_marc_problems(worldcat_record)
+            if marc_problems:
+                logger.info(
+                    f"\tPull CD for review [{len(marc_problems)} MARC warning(s)]: "
+                    f"{call_number} ({official_title})"
+                )
             for problem in marc_problems:
                 logger.info(f"\t\tREVIEW: {problem}")
-
             marc_record = worldcat_record
             marc_filename = worldcat_record_filename
         elif discogs_records:
             marc_record = create_discogs_record(data=discogs_records[0])
             marc_filename = original_record_filename
             logger.info(
-                f"\tPull CD for review [original record created]: {call_number} ({official_title})"
+                f"\tPull CD for review [DC original created]: {call_number} ({official_title})"
             )
         elif musicbrainz_records:
             marc_record = create_musicbrainz_record(data=musicbrainz_records[0])
             marc_filename = original_record_filename
             logger.info(
-                f"\tPull CD for review [original record created]: {call_number} ({official_title})"
+                f"\tPull CD for review [MB original created]: {call_number} ({official_title})"
             )
 
         # Finally, add local fields and write the record to file, or log a message.
