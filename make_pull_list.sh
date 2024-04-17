@@ -30,4 +30,4 @@ printf "%3d\tTotal to pull\n" ${TOTAL} >> ${PULL_LIST}
 tail -5 ${PULL_LIST}
 
 # Display MARC counts, for convenience, but don't add to the pull list
-for MRC in *.mrc; do marcsplit.exe -c ${MRC}; done
+for MRC in *.mrc; do python marc_count.py $MRC; done
