@@ -269,7 +269,6 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
     # 300 ## $a FORMATS\QTY audio disc : $b digital ; $c 4 3/4 in.
     # IF FORMATS\QTY>1, THEN $a FORMATS\QTY audio discs : $b digital ; $c 4 3/4 in.
     # If no formats\qty element, or if formats\qty=0, fill in with “1.”
-
     if "formats" in data["full_json"]:
         qty = data["full_json"]["formats"][0].get("qty", "1")
     else:
