@@ -39,7 +39,7 @@ def create_base_record() -> Record:
     # Srce (008/39) - d (Other)
     yymmdd = get_yymmdd()
     record.add_field(
-        Field(tag="008", data=f"{yymmdd}s||||    xx ||nn           n ||| d")
+        Field(tag="008", data=f"{yymmdd}suuuu    xx ||nn           n ||| d")
     )
 
     # 040 ## $a CLU $b eng $c CLU
@@ -170,17 +170,19 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
     must be in the format returned by the DiscogsClient.parse_data method."""
     # Dates (008/07-10) - release year
     year = str(data["full_json"]["year"])  # make a string for later concatenation
-    current_008 = base_record.get_fields("008")[0].data
-    year_008 = current_008[:7] + year + current_008[11:]
+    # Discogs year is "0" when unknown; leave base_record's default.
+    # Also be sure provided year is 4 characters.
+    if year != "0" and len(year) == 4:
+        f008 = base_record.get("008")
+        f008.data = f008.data[:7] + year + f008.data[11:]
 
     # Lang (008/35-37) - zxx
-    new_008 = year_008[:35] + "zxx" + year_008[38:]
-    base_record.remove_fields("008")
-    base_record.add_ordered_field(Field(tag="008", data=new_008))
+    f008 = base_record.get("008")
+    f008.data = f008.data[:35] + "zxx" + f008.data[38:]
 
     # 024 8# $a IDENTIFIERS\VALUE (only for type: Barcode)
     # If no barcode element, do not include field.
-    if data["full_json"]["identifiers"]:
+    if "identifiers" in data["full_json"]:
         for identifier in data["full_json"]["identifiers"]:
             # include only barcode elements without description: Text.
             if (
@@ -197,7 +199,7 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
 
     # 028 02 $a LABELS\CATNO $b LABELS\NAME
     # If no labels\catno element, do not include field.
-    if data["full_json"]["labels"]:
+    if "labels" in data["full_json"]:
         for label in data["full_json"]["labels"]:
             # If there are multiple labels\catno elements, create multiple 028 fields.
             # If no labels\name element, do not include $b.
@@ -241,9 +243,11 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
     # If no label-info\label\name element, fill in $b with “[publisher not identified]”
     # If there are multiple label-info\label\name elements, take only the first instance.
     # If no date element, fill in $c with “[date of publication not identified]”
-
     date_264 = str(data["full_json"]["year"])  # make a string for later concatenation
-    if data["full_json"]["labels"]:
+    if date_264 == "0":
+        date_264 = "date of publication not identified"
+
+    if "labels" in data["full_json"]:
         label = data["full_json"]["labels"][0]
         if "name" in label:
             publisher = label["name"]
@@ -266,9 +270,9 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
     # IF FORMATS\QTY>1, THEN $a FORMATS\QTY audio discs : $b digital ; $c 4 3/4 in.
     # If no formats\qty element, or if formats\qty=0, fill in with “1.”
 
-    if data["full_json"]["formats"]:
-        qty = data["full_json"]["formats"][0]["qty"]
-    if not qty or qty == "0":
+    if "formats" in data["full_json"]:
+        qty = data["full_json"]["formats"][0].get("qty", "1")
+    else:
         qty = "1"
     if int(qty) > 1:
         qty_text = qty + " audio discs :"
@@ -292,7 +296,7 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
 
     # 505 0# $a TRACKLIST\TITLE -- TRACKLIST\TITLE -- TRACKLIST\TITLE […].
     # If no tracklist element, do not include field.
-    if data["full_json"]["tracklist"]:
+    if "tracklist" in data["full_json"]:
         # Grab all track titles.
         track_titles = [track["title"] for track in data["full_json"]["tracklist"]]
         # Format into one string, separated by " -- ", ending with period.
@@ -303,7 +307,7 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
 
     # 653 #6 $a GENRES
     # include all genres in $a subfields
-    if data["full_json"]["genres"]:
+    if "genres" in data["full_json"]:
         subfields_653 = []
         for genre in data["full_json"]["genres"]:
             subfields_653.append(Subfield("a", genre))
@@ -327,21 +331,19 @@ def add_musicbrainz_data(base_record: Record, data: dict) -> Record:
 
     # Dates (008/07-10) - DATE
     # If no date element, leave as is
-    new_008 = base_record.get_fields("008")[0].data
     if "date" in data["full_json"]:
-        date_008 = data["full_json"]["date"][0:4]
-        current_008 = base_record.get_fields("008")[0].data
-        new_008 = current_008[:7] + date_008 + current_008[11:]
+        year = data["full_json"]["date"][0:4]
+        f008 = base_record.get("008")
+        f008.data = f008.data[:7] + year + f008.data[11:]
 
     # Lang (008/35-37) - IF [text-representation\language]=eng, THEN eng
     # IF [text-representation\language]!=eng, THEN zxx
     if data["full_json"]["text-representation"]["language"] == "eng":
-        new_008 = new_008[:35] + "eng" + new_008[38:]
+        language = "eng"
     else:
-        new_008 = new_008[:35] + "zxx" + new_008[38:]
-
-    base_record.remove_fields("008")
-    base_record.add_ordered_field(Field(tag="008", data=new_008))
+        language = "zxx"
+    f008 = base_record.get("008")
+    f008.data = f008.data[:35] + language + f008.data[38:]
 
     # 024 8# $a BARCODE
     # Normalize by removing spaces
