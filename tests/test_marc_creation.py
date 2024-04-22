@@ -1,12 +1,13 @@
 import unittest
 import json
 
-from pymarc import Subfield
+from pymarc import Subfield, Record
 from create_marc_record import (
     add_local_fields,
     create_base_record,
     add_discogs_data,
     add_musicbrainz_data,
+    get_yymmdd,
 )
 
 
@@ -84,6 +85,34 @@ class TestDiscogsFields(unittest.TestCase):
         with open("tests/sample_data/formatted_discogs_sample.data") as f:
             data = json.load(f)
         cls.record = add_discogs_data(cls.record, data)
+
+    def create_fake_record(self) -> Record:
+        # Create fake record with bad data for some tests.
+        fake_discogs_data = {
+            "title": "FAKE TITLE",
+            "artist": "FAKE ARTIST",
+            "publisher_number": "FAKE PUBNUM",
+            "full_json": {"id": 999999, "year": 0, "artists_sort": "FAKE ARTIST"},
+        }
+        base_record = create_base_record()
+        fake_record = add_local_fields(
+            base_record, barcode="FAKE BARCODE", call_number="FAKE CALL NUMBER"
+        )
+        fake_record = add_discogs_data(fake_record, fake_discogs_data)
+        return fake_record
+
+    def test_field_008(self):
+        fld008 = self.record.get("008")
+        today_yymmdd = get_yymmdd()
+        expected_data = today_yymmdd + "s2003    xx ||nn           n zxx d"
+        self.assertEqual(fld008.data, expected_data)
+
+    def test_field_008_no_year(self):
+        fake_record = self.create_fake_record()
+        fld008 = fake_record.get("008")
+        today_yymmdd = get_yymmdd()
+        expected_data = today_yymmdd + "suuuu    xx ||nn           n zxx d"
+        self.assertEqual(fld008.data, expected_data)
 
     def test_field_024(self):
         fld024 = self.record.get("024")

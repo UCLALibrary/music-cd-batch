@@ -159,6 +159,9 @@ def main() -> None:
             logger.info(
                 f"\tPull CD for review [MB original created]: {call_number} ({official_title})"
             )
+        else:
+            # None of the data sources provided usable data.
+            marc_record = None
 
         # Finally, add local fields and write the record to file, or log a message.
         if marc_record:
