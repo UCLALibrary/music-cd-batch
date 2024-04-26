@@ -1,3 +1,4 @@
+from data_evaluator import normalize
 from datetime import datetime
 from pymarc import MARCWriter, Record, Field, Subfield
 
@@ -183,19 +184,22 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
     # 024 8# $a IDENTIFIERS\VALUE (only for type: Barcode)
     # If no barcode element, do not include field.
     if "identifiers" in data["full_json"]:
+        barcodes = set()
         for identifier in data["full_json"]["identifiers"]:
-            # include only barcode elements without description: Text.
+            # include only barcode values without description: Text.
             if (
                 identifier.get("type") == "Barcode"
                 and identifier.get("description") != "Text"
+                and identifier.get("value")
             ):
-                # Normalize by removing spaces from value
-                value = identifier["value"].replace(" ", "")
-                subfields_024 = [Subfield("a", value)]
-                field_024 = Field(
-                    tag="024", indicators=["8", " "], subfields=subfields_024
-                )
-                base_record.add_ordered_field(field_024)
+                # Collect all valid values, normalize and de-dup via set.
+                barcodes.add(normalize(identifier["value"]))
+
+        # Add an 024 for each barcode found.
+        for value in barcodes:
+            subfields_024 = [Subfield("a", value)]
+            field_024 = Field(tag="024", indicators=["8", " "], subfields=subfields_024)
+            base_record.add_ordered_field(field_024)
 
     # 028 02 $a LABELS\CATNO $b LABELS\NAME
     # If no labels\catno element, do not include field.
@@ -345,8 +349,7 @@ def add_musicbrainz_data(base_record: Record, data: dict) -> Record:
     f008.data = f008.data[:35] + language + f008.data[38:]
 
     # 024 8# $a BARCODE
-    # Normalize by removing spaces
-    barcode = data["full_json"]["barcode"].replace(" ", "")
+    barcode = normalize(data["full_json"]["barcode"])
     subfields_024 = [Subfield("a", barcode)]
     field_024 = Field(tag="024", indicators=["8", " "], subfields=subfields_024)
     base_record.add_ordered_field(field_024)
