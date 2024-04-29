@@ -87,12 +87,38 @@ class TestDiscogsFields(unittest.TestCase):
         cls.record = add_discogs_data(cls.record, data)
 
     def create_fake_record(self) -> Record:
-        # Create fake record with bad data for some tests.
+        # Create minimal fake record with specific data for some tests.
         fake_discogs_data = {
             "title": "FAKE TITLE",
             "artist": "FAKE ARTIST",
             "publisher_number": "FAKE PUBNUM",
-            "full_json": {"id": 999999, "year": 0, "artists_sort": "FAKE ARTIST"},
+            "full_json": {
+                "id": 999999,
+                "year": 0,
+                "artists_sort": "FAKE ARTIST",
+                "labels": [
+                    {"catno": "FAKE001", "name": "FAKE PUB 01"},
+                    {"catno": "FAKE001", "name": "FAKE PUB 02"},
+                    {"catno": "FAKE001", "name": "FAKE PUB 02"},
+                ],
+                "identifiers": [
+                    {
+                        "type": "Barcode",
+                        "value": "Unused",
+                        "description": "Text",
+                    },
+                    {
+                        "type": "Barcode",
+                        "value": "FAKEBARCODE001",
+                        "description": "Valid",
+                    },
+                    {
+                        "type": "Barcode",
+                        "value": "FAKEBARCODE001",
+                        "description": "Duplicate",
+                    },
+                ],
+            },
         }
         base_record = create_base_record()
         fake_record = add_local_fields(
@@ -122,12 +148,27 @@ class TestDiscogsFields(unittest.TestCase):
         ]
         self.assertEqual(fld024.subfields, expected_subfields)
 
+    def test_field_024_duplicate_barcodes_are_ignored(self):
+        fake_record = self.create_fake_record()
+        # Data for fake record has 3 barcode identifiers:
+        # 1 invalid, 2 valid but identical
+        fld024s = fake_record.get_fields("024")
+        self.assertEqual(len(fld024s), 1)
+
     def test_field_028(self):
         fld028 = self.record.get("028")
         self.assertEqual(fld028.subfields[0].code, "a")
         self.assertEqual(fld028.subfields[0].value, "UDX 092")
         self.assertEqual(fld028.subfields[1].code, "b")
         self.assertEqual(fld028.subfields[1].value, "United Dairies")
+
+    def test_field_028_catnos_are_deduped(self):
+        fake_record = self.create_fake_record()
+        # Data for fake record has 3 catno labels:
+        # all catnos are identical, but 2 different names,
+        # so 2 028 fields should be created.
+        fld028s = fake_record.get_fields("028")
+        self.assertEqual(len(fld028s), 2)
 
     def test_field_245(self):
         fld245 = self.record.get("245")
@@ -195,6 +236,58 @@ class TestMusicBrainzFields(unittest.TestCase):
             data = json.load(f)
         cls.record = add_musicbrainz_data(cls.record, data)
 
+    def create_fake_record(self) -> Record:
+        # Create minimal fake record with specific data for some tests.
+        fake_musicbrainz_data = {
+            "title": "FAKE TITLE",
+            "artist": "FAKE ARTIST",
+            "publisher_number": "FAKE PUBNUM",
+            "full_json": {
+                "id": 999999,
+                "date": "0",
+                "artist-credit": [
+                    {
+                        "name": "FAKE ARTIST",
+                        "artist": {
+                            "id": "FAKEID",
+                            "name": "FAKE ARTIST",
+                            "sort-name": "FAKE ARTIST",
+                        },
+                    }
+                ],
+                "text-representation": {"language": "eng", "script": "Latn"},
+                "barcode": "FAKEBARCODE01",
+                "medium-count": 1,
+                "tag-list": [],
+                "label-info-list": [
+                    {
+                        "catalog-number": "FAKE001",
+                        "label": {
+                            "name": "FAKE PUB 01",
+                        },
+                    },
+                    {
+                        "catalog-number": "FAKE001",
+                        "label": {
+                            "name": "FAKE PUB 02",
+                        },
+                    },
+                    {
+                        "catalog-number": "FAKE001",
+                        "label": {
+                            "name": "FAKE PUB 02",
+                        },
+                    },
+                ],
+            },
+        }
+        base_record = create_base_record()
+        fake_record = add_local_fields(
+            base_record, barcode="FAKE BARCODE", call_number="FAKE CALL NUMBER"
+        )
+        fake_record = add_musicbrainz_data(fake_record, fake_musicbrainz_data)
+        return fake_record
+
     def test_field_024(self):
         fld024 = self.record.get("024")
         # one barcode in the sample data
@@ -209,6 +302,14 @@ class TestMusicBrainzFields(unittest.TestCase):
         self.assertEqual(fld028.subfields[0].value, "UD092")
         self.assertEqual(fld028.subfields[1].code, "b")
         self.assertEqual(fld028.subfields[1].value, "United Dairies")
+
+    def test_field_028_catnos_are_deduped(self):
+        fake_record = self.create_fake_record()
+        # Data for fake record has 3 catno labels:
+        # all catnos are identical, but 2 different names,
+        # so 2 028 fields should be created.
+        fld028s = fake_record.get_fields("028")
+        self.assertEqual(len(fld028s), 2)
 
     def test_field_245(self):
         fld245 = self.record.get("245")

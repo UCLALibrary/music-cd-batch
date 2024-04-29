@@ -204,16 +204,22 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
     # 028 02 $a LABELS\CATNO $b LABELS\NAME
     # If no labels\catno element, do not include field.
     if "labels" in data["full_json"]:
+        # Collect values (catno and name) via dict to de-dup.
+        labels = {}
         for label in data["full_json"]["labels"]:
             # If there are multiple labels\catno elements, create multiple 028 fields.
             # If no labels\name element, do not include $b.
-            if "name" not in label:
-                subfields_028 = [Subfield("a", label["catno"])]
-            else:
-                subfields_028 = [
-                    Subfield("a", label["catno"]),
-                    Subfield("b", label["name"]),
-                ]
+            # Same catno ($a) + different name ($b) is OK, but remove full duplicates.
+            catno = label.get("catno")
+            name = label.get("name")
+            normalized_key = normalize(catno + name)
+            labels[normalized_key] = (catno, name)
+
+        # Ignore keys, use now-deduped catno and name to create 028 fields.
+        for normalized_key, (catno, name) in labels.items():
+            subfields_028 = [Subfield("a", catno)]
+            if name:
+                subfields_028.append(Subfield("b", name))
             field_028 = Field(tag="028", indicators=["0", "2"], subfields=subfields_028)
             base_record.add_ordered_field(field_028)
 
@@ -358,13 +364,21 @@ def add_musicbrainz_data(base_record: Record, data: dict) -> Record:
     # If no label-info\catalog-number element, do not include field.
     # If there are multiple label-info\catalog-number elements, create multiple 028 fields.
     if "label-info-list" in data["full_json"]:
+        # Collect values (catno and name) via dict to de-dup.
+        labels = {}
         for label_info in data["full_json"]["label-info-list"]:
-            subfields_028 = []
-            if label_info["catalog-number"]:
-                subfields_028.append(Subfield("a", label_info["catalog-number"]))
-                # If no label-info\label\name element, do not include $b.
-                if label_info["label"]["name"]:
-                    subfields_028.append(Subfield("b", label_info["label"]["name"]))
+            # If no labels\name element, do not include $b.
+            # Same catno ($a) + different name ($b) is OK, but remove full duplicates.
+            catno = label_info.get("catalog-number")
+            name = label_info.get("label", "").get("name")
+            normalized_key = normalize(catno + name)
+            labels[normalized_key] = (catno, name)
+
+        # Ignore keys, use now-deduped catno and name to create 028 fields.
+        for normalized_key, (catno, name) in labels.items():
+            subfields_028 = [Subfield("a", catno)]
+            if name:
+                subfields_028.append(Subfield("b", name))
             field_028 = Field(tag="028", indicators=["0", "2"], subfields=subfields_028)
             base_record.add_ordered_field(field_028)
 
