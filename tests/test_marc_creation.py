@@ -30,6 +30,27 @@ class TestBaseRecord(unittest.TestCase):
         fld344s = self.base_record.get_fields("344")
         self.assertEqual(len(fld344s), 2)
 
+    def test_962_is_added(self):
+        fld962 = self.base_record.get("962")
+        yyyymmdd = datetime.today().strftime("%Y%m%d")
+        expected_subfields = [
+            Subfield("a", "cmc"),
+            Subfield("b", "meherbatch"),
+            Subfield("c", yyyymmdd),
+            Subfield("d", "1"),
+            Subfield("9", "LOCAL"),
+        ]
+        self.assertEqual(fld962.subfields, expected_subfields)
+
+    def test_966_is_added(self):
+        fld966 = self.base_record.get("966")
+        expected_subfields = [
+            Subfield("a", "MEHER"),
+            Subfield("b", "Donovan Meher Collection"),
+            Subfield("9", "LOCAL"),
+        ]
+        self.assertEqual(fld966.subfields, expected_subfields)
+
 
 class TestLocalFields(unittest.TestCase):
     @classmethod
@@ -73,27 +94,6 @@ class TestLocalFields(unittest.TestCase):
         self.assertEqual(
             fld590.subfields[0].value, "UCLA Music Library copy lacks container insert."
         )
-
-    def test_962_is_added(self):
-        fld962 = self.record.get("962")
-        yyyymmdd = datetime.today().strftime("%Y%m%d")
-        expected_subfields = [
-            Subfield("a", "cmc"),
-            Subfield("b", "meherbatch"),
-            Subfield("c", yyyymmdd),
-            Subfield("d", "1"),
-            Subfield("9", "LOCAL"),
-        ]
-        self.assertEqual(fld962.subfields, expected_subfields)
-
-    def test_966_is_added(self):
-        fld966 = self.record.get("966")
-        expected_subfields = [
-            Subfield("a", "MEHER"),
-            Subfield("b", "Donovan Meher Collection"),
-            Subfield("9", "LOCAL"),
-        ]
-        self.assertEqual(fld966.subfields, expected_subfields)
 
 
 class TestDiscogsFields(unittest.TestCase):

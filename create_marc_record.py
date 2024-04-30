@@ -109,6 +109,27 @@ def create_base_record() -> Record:
     field_347_2 = Field(tag="347", indicators=[" ", " "], subfields=subfields_347_2)
     record.add_field(field_347_2)
 
+    # 962 ## $a cmc $b meherbatch $c YYYYMMDD $d 3 $k meherorig $9 LOCAL
+    yyyymmdd = datetime.today().strftime("%Y%m%d")
+    subfields_962 = [
+        Subfield("a", "cmc"),
+        Subfield("b", "meherbatch"),
+        Subfield("c", yyyymmdd),
+        Subfield("d", "1"),
+        Subfield("9", "LOCAL"),
+    ]
+    field_962 = Field(tag="962", indicators=[" ", " "], subfields=subfields_962)
+    record.add_ordered_field(field_962)
+
+    # 966 ## $a MEHER $b Donovan Meher Collection $9 LOCAL
+    subfields_966 = [
+        Subfield("a", "MEHER"),
+        Subfield("b", "Donovan Meher Collection"),
+        Subfield("9", "LOCAL"),
+    ]
+    field_966 = Field(tag="966", indicators=[" ", " "], subfields=subfields_966)
+    record.add_ordered_field(field_966)
+
     return record
 
 
@@ -132,27 +153,6 @@ def add_local_fields(
     subfields_099 = [Subfield("a", call_number)]
     field_099 = Field(tag="099", indicators=[" ", " "], subfields=subfields_099)
     record.add_ordered_field(field_099)
-
-    # 962 ## $a cmc $b meherbatch $c YYYYMMDD $d 3 $k meherorig $9 LOCAL
-    yyyymmdd = datetime.today().strftime("%Y%m%d")
-    subfields_962 = [
-        Subfield("a", "cmc"),
-        Subfield("b", "meherbatch"),
-        Subfield("c", yyyymmdd),
-        Subfield("d", "1"),
-        Subfield("9", "LOCAL"),
-    ]
-    field_962 = Field(tag="962", indicators=[" ", " "], subfields=subfields_962)
-    record.add_ordered_field(field_962)
-
-    # 966 ## $a MEHER $b Donovan Meher Collection $9 LOCAL
-    subfields_966 = [
-        Subfield("a", "MEHER"),
-        Subfield("b", "Donovan Meher Collection"),
-        Subfield("9", "LOCAL"),
-    ]
-    field_966 = Field(tag="966", indicators=[" ", " "], subfields=subfields_966)
-    record.add_ordered_field(field_966)
 
     # For disks without cases, add 590
     # 590 ## UCLA Music Library copy lacks container insert. $9 LOCAL
