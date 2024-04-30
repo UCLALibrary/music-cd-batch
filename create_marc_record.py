@@ -1,3 +1,4 @@
+from data_evaluator import normalize
 from datetime import datetime
 from pymarc import MARCWriter, Record, Field, Subfield
 
@@ -25,7 +26,9 @@ def create_base_record() -> Record:
     record.add_field(Field(tag="007", data="sd fungnn|||eu"))
 
     # 008 - general information fixed field
-    # DtSt (008/06) - s (Single known date/probable date)
+    # DtSt (008/06) - s (Single known date/probable date) or n (Dates unknown)
+    # Dat1 (008/07-10) - will be set by program if known, or uuuu if not known
+    # Dat2 (008/11-14) - blanks if Dat1 is set, uuuu if Dat1 is not known
     # Ctry (008/15-17) - xx# (No place, unknown, or undetermined)
     # Comp (008/18-19) - ##
     # FMus (008/20) - n (Not applicable)
@@ -39,7 +42,7 @@ def create_base_record() -> Record:
     # Srce (008/39) - d (Other)
     yymmdd = get_yymmdd()
     record.add_field(
-        Field(tag="008", data=f"{yymmdd}suuuu    xx ||nn           n ||| d")
+        Field(tag="008", data=f"{yymmdd}nuuuuuuuuxx ||nn           n ||| d")
     )
 
     # 040 ## $a CLU $b eng $c CLU
@@ -106,6 +109,27 @@ def create_base_record() -> Record:
     field_347_2 = Field(tag="347", indicators=[" ", " "], subfields=subfields_347_2)
     record.add_field(field_347_2)
 
+    # 962 ## $a cmc $b meherbatch $c YYYYMMDD $d 3 $k meherorig $9 LOCAL
+    yyyymmdd = datetime.today().strftime("%Y%m%d")
+    subfields_962 = [
+        Subfield("a", "cmc"),
+        Subfield("b", "meherbatch"),
+        Subfield("c", yyyymmdd),
+        Subfield("d", "1"),
+        Subfield("9", "LOCAL"),
+    ]
+    field_962 = Field(tag="962", indicators=[" ", " "], subfields=subfields_962)
+    record.add_ordered_field(field_962)
+
+    # 966 ## $a MEHER $b Donovan Meher Collection $9 LOCAL
+    subfields_966 = [
+        Subfield("a", "MEHER"),
+        Subfield("b", "Donovan Meher Collection"),
+        Subfield("9", "LOCAL"),
+    ]
+    field_966 = Field(tag="966", indicators=[" ", " "], subfields=subfields_966)
+    record.add_ordered_field(field_966)
+
     return record
 
 
@@ -130,28 +154,6 @@ def add_local_fields(
     field_099 = Field(tag="099", indicators=[" ", " "], subfields=subfields_099)
     record.add_ordered_field(field_099)
 
-    # 962 ## $a cmc $b meherbatch $c YYYYMMDD $d 3 $k meherorig $9 LOCAL
-    yyyymmdd = datetime.today().strftime("%Y%m%d")
-    subfields_962 = [
-        Subfield("a", "cmc"),
-        Subfield("b", "meherbatch"),
-        Subfield("c", yyyymmdd),
-        Subfield("d", "3"),
-        Subfield("k", "meherorig"),
-        Subfield("9", "LOCAL"),
-    ]
-    field_962 = Field(tag="962", indicators=[" ", " "], subfields=subfields_962)
-    record.add_ordered_field(field_962)
-
-    # 966 ## $a MEHER $b Donovan Meher Collection $9 LOCAL
-    subfields_966 = [
-        Subfield("a", "MEHER"),
-        Subfield("b", "Donovan Meher Collection"),
-        Subfield("9", "LOCAL"),
-    ]
-    field_966 = Field(tag="966", indicators=[" ", " "], subfields=subfields_966)
-    record.add_ordered_field(field_966)
-
     # For disks without cases, add 590
     # 590 ## UCLA Music Library copy lacks container insert. $9 LOCAL
     if no_cases:
@@ -174,7 +176,8 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
     # Also be sure provided year is 4 characters.
     if year != "0" and len(year) == 4:
         f008 = base_record.get("008")
-        f008.data = f008.data[:7] + year + f008.data[11:]
+        # 008/06 = s, 008/07-10 = year, 008/11-14 = 4 blanks
+        f008.data = f008.data[:6] + "s" + year + "    " + f008.data[15:]
 
     # Lang (008/35-37) - zxx
     f008 = base_record.get("008")
@@ -183,33 +186,44 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
     # 024 8# $a IDENTIFIERS\VALUE (only for type: Barcode)
     # If no barcode element, do not include field.
     if "identifiers" in data["full_json"]:
+        barcodes = set()
         for identifier in data["full_json"]["identifiers"]:
-            # include only barcode elements without description: Text.
+            # include only barcode values without description: Text.
             if (
                 identifier.get("type") == "Barcode"
                 and identifier.get("description") != "Text"
+                and identifier.get("value")
             ):
-                # Normalize by removing spaces from value
-                value = identifier["value"].replace(" ", "")
-                subfields_024 = [Subfield("a", value)]
-                field_024 = Field(
-                    tag="024", indicators=["8", " "], subfields=subfields_024
-                )
-                base_record.add_ordered_field(field_024)
+                # Collect all valid values, normalize and de-dup via set.
+                barcodes.add(normalize(identifier["value"]))
+
+        # Add an 024 for each barcode found.
+        for value in barcodes:
+            subfields_024 = [Subfield("a", value)]
+            field_024 = Field(tag="024", indicators=["8", " "], subfields=subfields_024)
+            base_record.add_ordered_field(field_024)
 
     # 028 02 $a LABELS\CATNO $b LABELS\NAME
     # If no labels\catno element, do not include field.
     if "labels" in data["full_json"]:
+        # Collect values (catno and name) via dict to de-dup.
+        labels = {}
         for label in data["full_json"]["labels"]:
             # If there are multiple labels\catno elements, create multiple 028 fields.
             # If no labels\name element, do not include $b.
-            if "name" not in label:
-                subfields_028 = [Subfield("a", label["catno"])]
-            else:
-                subfields_028 = [
-                    Subfield("a", label["catno"]),
-                    Subfield("b", label["name"]),
-                ]
+            # Same catno ($a) + different name ($b) is OK, but remove full duplicates.
+            catno = label.get("catno")
+            name = label.get("name")
+            normalized_key = normalize(catno + name)
+            # Preserve the first occurrence of a key, so add only if not already present.
+            if normalized_key not in labels:
+                labels[normalized_key] = (catno, name)
+
+        # Ignore keys, use now-deduped catno and name to create 028 fields.
+        for normalized_key, (catno, name) in labels.items():
+            subfields_028 = [Subfield("a", catno)]
+            if name:
+                subfields_028.append(Subfield("b", name))
             field_028 = Field(tag="028", indicators=["0", "2"], subfields=subfields_028)
             base_record.add_ordered_field(field_028)
 
@@ -321,6 +335,10 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
     field_720 = Field(tag="720", indicators=[" ", " "], subfields=subfields_720)
     base_record.add_ordered_field(field_720)
 
+    # Remove 962 & 966, added in add_local_fields(), which apply only to OCLC records;
+    # this is safe if fields don't exist.
+    base_record.remove_fields("962", "966")
+
     return base_record
 
 
@@ -334,6 +352,8 @@ def add_musicbrainz_data(base_record: Record, data: dict) -> Record:
         year = data["full_json"]["date"][0:4]
         f008 = base_record.get("008")
         f008.data = f008.data[:7] + year + f008.data[11:]
+        # 008/06 = s, 008/07-10 = year, 008/11-14 = 4 blanks
+        f008.data = f008.data[:6] + "s" + year + "    " + f008.data[15:]
 
     # Lang (008/35-37) - IF [text-representation\language]=eng, THEN eng
     # IF [text-representation\language]!=eng, THEN zxx
@@ -345,8 +365,7 @@ def add_musicbrainz_data(base_record: Record, data: dict) -> Record:
     f008.data = f008.data[:35] + language + f008.data[38:]
 
     # 024 8# $a BARCODE
-    # Normalize by removing spaces
-    barcode = data["full_json"]["barcode"].replace(" ", "")
+    barcode = normalize(data["full_json"]["barcode"])
     subfields_024 = [Subfield("a", barcode)]
     field_024 = Field(tag="024", indicators=["8", " "], subfields=subfields_024)
     base_record.add_ordered_field(field_024)
@@ -355,13 +374,23 @@ def add_musicbrainz_data(base_record: Record, data: dict) -> Record:
     # If no label-info\catalog-number element, do not include field.
     # If there are multiple label-info\catalog-number elements, create multiple 028 fields.
     if "label-info-list" in data["full_json"]:
+        # Collect values (catno and name) via dict to de-dup.
+        labels = {}
         for label_info in data["full_json"]["label-info-list"]:
-            subfields_028 = []
-            if label_info["catalog-number"]:
-                subfields_028.append(Subfield("a", label_info["catalog-number"]))
-                # If no label-info\label\name element, do not include $b.
-                if label_info["label"]["name"]:
-                    subfields_028.append(Subfield("b", label_info["label"]["name"]))
+            # If no labels\name element, do not include $b.
+            # Same catno ($a) + different name ($b) is OK, but remove full duplicates.
+            catno = label_info.get("catalog-number")
+            name = label_info.get("label", "").get("name")
+            normalized_key = normalize(catno + name)
+            # Preserve the first occurrence of a key, so add only if not already present.
+            if normalized_key not in labels:
+                labels[normalized_key] = (catno, name)
+
+        # Ignore keys, use now-deduped catno and name to create 028 fields.
+        for normalized_key, (catno, name) in labels.items():
+            subfields_028 = [Subfield("a", catno)]
+            if name:
+                subfields_028.append(Subfield("b", name))
             field_028 = Field(tag="028", indicators=["0", "2"], subfields=subfields_028)
             base_record.add_ordered_field(field_028)
 
@@ -462,6 +491,10 @@ def add_musicbrainz_data(base_record: Record, data: dict) -> Record:
     subfields_720 = [Subfield("a", artist_720 + ".")]
     field_720 = Field(tag="720", indicators=[" ", " "], subfields=subfields_720)
     base_record.add_ordered_field(field_720)
+
+    # Remove 962 & 966, added in add_local_fields(), which apply only to OCLC records;
+    # this is safe if fields don't exist.
+    base_record.remove_fields("962", "966")
 
     return base_record
 
