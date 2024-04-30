@@ -26,7 +26,9 @@ def create_base_record() -> Record:
     record.add_field(Field(tag="007", data="sd fungnn|||eu"))
 
     # 008 - general information fixed field
-    # DtSt (008/06) - s (Single known date/probable date)
+    # DtSt (008/06) - s (Single known date/probable date) or n (Dates unknown)
+    # Dat1 (008/07-10) - will be set by program if known, or uuuu if not known
+    # Dat2 (008/11-14) - blanks if Dat1 is set, uuuu if Dat1 is not known
     # Ctry (008/15-17) - xx# (No place, unknown, or undetermined)
     # Comp (008/18-19) - ##
     # FMus (008/20) - n (Not applicable)
@@ -40,7 +42,7 @@ def create_base_record() -> Record:
     # Srce (008/39) - d (Other)
     yymmdd = get_yymmdd()
     record.add_field(
-        Field(tag="008", data=f"{yymmdd}suuuu    xx ||nn           n ||| d")
+        Field(tag="008", data=f"{yymmdd}nuuuuuuuuxx ||nn           n ||| d")
     )
 
     # 040 ## $a CLU $b eng $c CLU
@@ -137,8 +139,7 @@ def add_local_fields(
         Subfield("a", "cmc"),
         Subfield("b", "meherbatch"),
         Subfield("c", yyyymmdd),
-        Subfield("d", "3"),
-        Subfield("k", "meherorig"),
+        Subfield("d", "1"),
         Subfield("9", "LOCAL"),
     ]
     field_962 = Field(tag="962", indicators=[" ", " "], subfields=subfields_962)
@@ -175,7 +176,8 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
     # Also be sure provided year is 4 characters.
     if year != "0" and len(year) == 4:
         f008 = base_record.get("008")
-        f008.data = f008.data[:7] + year + f008.data[11:]
+        # 008/06 = s, 008/07-10 = year, 008/11-14 = 4 blanks
+        f008.data = f008.data[:6] + "s" + year + "    " + f008.data[15:]
 
     # Lang (008/35-37) - zxx
     f008 = base_record.get("008")
@@ -331,6 +333,10 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
     field_720 = Field(tag="720", indicators=[" ", " "], subfields=subfields_720)
     base_record.add_ordered_field(field_720)
 
+    # Remove 962 & 966, added in add_local_fields(), which apply only to OCLC records;
+    # this is safe if fields don't exist.
+    base_record.remove_fields("962", "966")
+
     return base_record
 
 
@@ -344,6 +350,8 @@ def add_musicbrainz_data(base_record: Record, data: dict) -> Record:
         year = data["full_json"]["date"][0:4]
         f008 = base_record.get("008")
         f008.data = f008.data[:7] + year + f008.data[11:]
+        # 008/06 = s, 008/07-10 = year, 008/11-14 = 4 blanks
+        f008.data = f008.data[:6] + "s" + year + "    " + f008.data[15:]
 
     # Lang (008/35-37) - IF [text-representation\language]=eng, THEN eng
     # IF [text-representation\language]!=eng, THEN zxx
@@ -479,6 +487,10 @@ def add_musicbrainz_data(base_record: Record, data: dict) -> Record:
     subfields_720 = [Subfield("a", artist_720 + ".")]
     field_720 = Field(tag="720", indicators=[" ", " "], subfields=subfields_720)
     base_record.add_ordered_field(field_720)
+
+    # Remove 962 & 966, added in add_local_fields(), which apply only to OCLC records;
+    # this is safe if fields don't exist.
+    base_record.remove_fields("962", "966")
 
     return base_record
 

@@ -1,3 +1,4 @@
+from datetime import datetime
 import unittest
 import json
 
@@ -73,6 +74,27 @@ class TestLocalFields(unittest.TestCase):
             fld590.subfields[0].value, "UCLA Music Library copy lacks container insert."
         )
 
+    def test_962_is_added(self):
+        fld962 = self.record.get("962")
+        yyyymmdd = datetime.today().strftime("%Y%m%d")
+        expected_subfields = [
+            Subfield("a", "cmc"),
+            Subfield("b", "meherbatch"),
+            Subfield("c", yyyymmdd),
+            Subfield("d", "1"),
+            Subfield("9", "LOCAL"),
+        ]
+        self.assertEqual(fld962.subfields, expected_subfields)
+
+    def test_966_is_added(self):
+        fld966 = self.record.get("966")
+        expected_subfields = [
+            Subfield("a", "MEHER"),
+            Subfield("b", "Donovan Meher Collection"),
+            Subfield("9", "LOCAL"),
+        ]
+        self.assertEqual(fld966.subfields, expected_subfields)
+
 
 class TestDiscogsFields(unittest.TestCase):
     @classmethod
@@ -137,7 +159,7 @@ class TestDiscogsFields(unittest.TestCase):
         fake_record = self.create_fake_record()
         fld008 = fake_record.get("008")
         today_yymmdd = get_yymmdd()
-        expected_data = today_yymmdd + "suuuu    xx ||nn           n zxx d"
+        expected_data = today_yymmdd + "nuuuuuuuuxx ||nn           n zxx d"
         self.assertEqual(fld008.data, expected_data)
 
     def test_field_024(self):
@@ -222,6 +244,14 @@ class TestDiscogsFields(unittest.TestCase):
         fld720 = self.record.get("720")
         self.assertEqual(fld720.subfields[0].code, "a")
         self.assertEqual(fld720.subfields[0].value, "Nurse With Wound.")
+
+    def test_field_962_does_not_exist(self):
+        fld962 = self.record.get("962")
+        self.assertIsNone(fld962)
+
+    def test_field_966_does_not_exist(self):
+        fld966 = self.record.get("966")
+        self.assertIsNone(fld966)
 
 
 class TestMusicBrainzFields(unittest.TestCase):
@@ -355,3 +385,11 @@ class TestMusicBrainzFields(unittest.TestCase):
         fld720 = self.record.get("720")
         self.assertEqual(fld720.subfields[0].code, "a")
         self.assertEqual(fld720.subfields[0].value, "Nurse With Wound.")
+
+    def test_field_962_does_not_exist(self):
+        fld962 = self.record.get("962")
+        self.assertIsNone(fld962)
+
+    def test_field_966_does_not_exist(self):
+        fld966 = self.record.get("966")
+        self.assertIsNone(fld966)
