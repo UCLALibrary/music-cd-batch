@@ -215,7 +215,9 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
             catno = label.get("catno")
             name = label.get("name")
             normalized_key = normalize(catno + name)
-            labels[normalized_key] = (catno, name)
+            # Preserve the first occurrence of a key, so add only if not already present.
+            if normalized_key not in labels:
+                labels[normalized_key] = (catno, name)
 
         # Ignore keys, use now-deduped catno and name to create 028 fields.
         for normalized_key, (catno, name) in labels.items():
@@ -380,7 +382,9 @@ def add_musicbrainz_data(base_record: Record, data: dict) -> Record:
             catno = label_info.get("catalog-number")
             name = label_info.get("label", "").get("name")
             normalized_key = normalize(catno + name)
-            labels[normalized_key] = (catno, name)
+            # Preserve the first occurrence of a key, so add only if not already present.
+            if normalized_key not in labels:
+                labels[normalized_key] = (catno, name)
 
         # Ignore keys, use now-deduped catno and name to create 028 fields.
         for normalized_key, (catno, name) in labels.items():
