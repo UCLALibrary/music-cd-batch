@@ -19,6 +19,9 @@ oclc_test
 !tests/sample_data/*.tsv
 !tests/sample_data/*.xml
 
+# And allow devcontainer json
+!.devcontainer/*.json
+
 # Exclude logs and other output
 *.log
 *.out
