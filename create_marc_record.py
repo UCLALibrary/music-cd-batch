@@ -109,6 +109,13 @@ def create_base_record() -> Record:
     field_347_2 = Field(tag="347", indicators=[" ", " "], subfields=subfields_347_2)
     record.add_field(field_347_2)
 
+    return record
+
+
+def add_worldcat_fields(record: Record) -> Record:
+    """Add local fields (9xx) to a MARC record.  These are added
+    ONLY to WorldCat records."""
+
     # 962 ## $a cmc $b meherbatch $c YYYYMMDD $d 3 $k meherorig $9 LOCAL
     yyyymmdd = datetime.today().strftime("%Y%m%d")
     subfields_962 = [
@@ -335,10 +342,6 @@ def add_discogs_data(base_record: Record, data: dict) -> Record:
     field_720 = Field(tag="720", indicators=[" ", " "], subfields=subfields_720)
     base_record.add_ordered_field(field_720)
 
-    # Remove 962 & 966, added in add_local_fields(), which apply only to OCLC records;
-    # this is safe if fields don't exist.
-    base_record.remove_fields("962", "966")
-
     return base_record
 
 
@@ -491,10 +494,6 @@ def add_musicbrainz_data(base_record: Record, data: dict) -> Record:
     subfields_720 = [Subfield("a", artist_720 + ".")]
     field_720 = Field(tag="720", indicators=[" ", " "], subfields=subfields_720)
     base_record.add_ordered_field(field_720)
-
-    # Remove 962 & 966, added in add_local_fields(), which apply only to OCLC records;
-    # this is safe if fields don't exist.
-    base_record.remove_fields("962", "966")
 
     return base_record
 

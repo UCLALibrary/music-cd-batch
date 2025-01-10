@@ -2,9 +2,10 @@ from datetime import datetime
 import unittest
 import json
 
-from pymarc import Subfield, Record
+from pymarc import MARCReader, Subfield, Record
 from create_marc_record import (
     add_local_fields,
+    add_worldcat_fields,
     create_base_record,
     add_discogs_data,
     add_musicbrainz_data,
@@ -29,27 +30,6 @@ class TestBaseRecord(unittest.TestCase):
     def test_fld344_repeated(self):
         fld344s = self.base_record.get_fields("344")
         self.assertEqual(len(fld344s), 2)
-
-    def test_962_is_added(self):
-        fld962 = self.base_record.get("962")
-        yyyymmdd = datetime.today().strftime("%Y%m%d")
-        expected_subfields = [
-            Subfield("a", "cmc"),
-            Subfield("b", "meherbatch"),
-            Subfield("c", yyyymmdd),
-            Subfield("d", "1"),
-            Subfield("9", "LOCAL"),
-        ]
-        self.assertEqual(fld962.subfields, expected_subfields)
-
-    def test_966_is_added(self):
-        fld966 = self.base_record.get("966")
-        expected_subfields = [
-            Subfield("a", "MEHER"),
-            Subfield("b", "Donovan Meher Collection"),
-            Subfield("9", "LOCAL"),
-        ]
-        self.assertEqual(fld966.subfields, expected_subfields)
 
 
 class TestLocalFields(unittest.TestCase):
@@ -94,6 +74,39 @@ class TestLocalFields(unittest.TestCase):
         self.assertEqual(
             fld590.subfields[0].value, "UCLA Music Library copy lacks container insert."
         )
+
+
+class TestWorldCatField(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Load and update WorldCat record for use in all tests in this class.
+        with open("tests/sample_data/1011080915.mrc", "rb") as marc:
+            reader = MARCReader(marc)
+            # There's only 1 record in this file, so just grab it
+            # instead of messing with artificial for loop.
+            worldcat_record = reader.__next__()
+        cls.worldcat_record = add_worldcat_fields(worldcat_record)
+
+    def test_962_is_added(self):
+        fld962 = self.worldcat_record.get("962")
+        yyyymmdd = datetime.today().strftime("%Y%m%d")
+        expected_subfields = [
+            Subfield("a", "cmc"),
+            Subfield("b", "meherbatch"),
+            Subfield("c", yyyymmdd),
+            Subfield("d", "1"),
+            Subfield("9", "LOCAL"),
+        ]
+        self.assertEqual(fld962.subfields, expected_subfields)
+
+    def test_966_is_added(self):
+        fld966 = self.worldcat_record.get("966")
+        expected_subfields = [
+            Subfield("a", "MEHER"),
+            Subfield("b", "Donovan Meher Collection"),
+            Subfield("9", "LOCAL"),
+        ]
+        self.assertEqual(fld966.subfields, expected_subfields)
 
 
 class TestDiscogsFields(unittest.TestCase):
