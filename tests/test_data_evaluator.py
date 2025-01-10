@@ -1,11 +1,13 @@
 import unittest
 
-from pymarc import Field, Record
+from pymarc import Field, MARCReader, Record
 from data_evaluator import (
     cataloging_language_is_ok,
     form_of_item_is_ok,
     get_encoding_level_score,
+    get_oclc_number,
     normalize,
+    normalize_oclc_number,
     normalize_title,
     record_is_usable,
     record_type_is_ok,
@@ -29,6 +31,20 @@ class NormalizationTests(unittest.TestCase):
         input = "Common punctuation: .,;:/-()#%&*$@!"
         normalized_input = strip_punctuation(input)
         self.assertEqual(normalized_input, "Common punctuation ")
+
+    def test_get_oclc_number(self):
+        with open("tests/sample_data/1011080915.mrc", "rb") as marc:
+            reader = MARCReader(marc)
+            # There's only 1 record in this file, so just grab it
+            # instead of messing with artificial for loop.
+            marc_record = reader.__next__()
+        oclc_number = get_oclc_number(marc_record)
+        self.assertEqual(oclc_number, "1011080915")
+
+    def test_normalize_oclc_number(self):
+        input = "ocm012345"
+        normalized_input = normalize_oclc_number(input)
+        self.assertEqual(normalized_input, "12345")
 
 
 class RecordQualityTests(unittest.TestCase):
