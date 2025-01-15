@@ -1,47 +1,55 @@
 # music-cd-batch
 Programs for Music CD batch processing
 
-## Developer Information
+# Developer Information
 
-### Overview of environment
+## Build (first time) / rebuild (as needed)
 
-The development environment requires:
-* git (at least version 2)
-* docker (current version recommended: 20.10.12)
-* docker-compose (at least version 1.25.0; current recommended: 1.29.2)
+`docker compose build`
 
-#### Docker container
+This builds a Docker image, `music-cd-batch-batchcd:latest`, which can be used for developing, testing, and running code.
 
-This uses Debian 11 (Bullseye) in a Docker container running Python 3.11.  All code
-runs in the container, so local version of Python does not matter.  All Python packages
-are installed in the container.
+## Dev container
 
-### Setup
+This project comes with a basic dev container definition, in `.devcontainer/devcontainer.json`. It's known to work with VS Code,
+and may work with other IDEs like PyCharm.  For VS Code, it also installs the Python, Black (formatter), and Flake8 (linter)
+extensions.
 
-1. Build using docker-compose.
+The project's directory is available within the container at `/home/batchcd/process_files`.
 
-   ```$ docker-compose build```
+### Rebuilding the dev container
 
-2. Bring the system up, with container running in the background.
+VS Code builds its own container from the base image. This container may not always get rebuilt when the base image is rebuilt
+(e.g., if packages are changed via `requirements.txt`).
 
-   ```$ docker-compose up -d```
+If needed, rebuild the dev container by:
+1. Close VS Code and wait several seconds for the dev container to shut down (check via `docker ps`).
+2. Delete the dev container.
+   1. `docker images | grep vsc-music` # vsc-music-cd-batch-LONG_HEX_STRING-uid
+   2. `docker image rm -f vsc-music-cd-batch-LONG_HEX_STRING-uid`
+3. Start VS Code as usual.
 
-3. Run commands in the container.
+## Running code
 
-   ```
-   # Open a shell in the container
-   $ docker-compose exec batchcd bash
+Running code from a VS Code terminal within the dev container should just work, e.g.: `python make_music_records.py` (or whatever the specific program is).
 
-   # Open a Python shell in the container
-   $ docker-compose exec batchcd python
-   
-   # Run the program against a full file of data
-   $ docker-compose exec batchcd python make_music_records.py batch_016_20240229.tsv
+Otherwise, run a program via docker compose.  From the project directory:
 
-   # Run the program against a file of data, starting with record 5 and ending with record 10
-   $ docker-compose exec batchcd python make_music_records.py -s 5 -e 10 batch_016_20240229.tsv
-   ```
-4. Some data sources require API keys. Get a copy of `api_keys.py` from a teammate and put it in the top level directory of the project.
+```
+# Open a shell in the container
+$ docker compose run batchcd bash
+
+# Open a Python shell in the container
+$ docker compose run batchcd python
+
+# Run the program against a full file of data
+$ docker compose run batchcd python make_music_records.py batch_016_20240229.tsv
+
+# Run the program against a file of data, starting with record 5 and ending with record 10
+$ docker compose run batchcd python make_music_records.py -s 5 -e 10 batch_016_20240229.tsv
+```
+
+Some data sources require API keys. Get a copy of `api_keys.py` from a teammate and put it in the top level directory of the project.
 
 ### Input and General Flow
 
@@ -81,7 +89,7 @@ interrupted run.  Be sure there's no overlap, or MARC files could contain duplic
 Tests focus on code which has significant side effects or implements custom logic.
 Run tests in the container:
 
-```$ docker-compose exec batchcd python -m unittest discover -s tests```
+```$ docker compose run batchcd python -m unittest discover -s tests```
 
 
 ## Usage (OBSOLETE: internal notes from old process, to be kept / edited later)

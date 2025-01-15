@@ -1,4 +1,4 @@
-FROM python:3.11-slim-bullseye
+FROM python:3.13-slim-bookworm
 
 RUN apt-get update
 
@@ -29,6 +29,3 @@ RUN pip install --upgrade pip --disable-pip-version-check
 
 # Install requirements for this application
 RUN pip install --no-cache-dir -r requirements.txt --user --no-warn-script-location
-
-# When container starts, keep it running indefinitely, doing nothing
-ENTRYPOINT ["tail", "-f", "/dev/null"]

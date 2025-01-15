@@ -107,9 +107,12 @@ def get_oclc_number(record: Record) -> str:
     """Return the OCLC number from the MARC record's 001 field, with
     alpha prefix removed.  Assumes the MARC record came from OCLC,
     which is safe for this project, so will always have an 001 with OCLC#.
+
+    This only needs to be done with OCLC numbers in MARC records.  OCLC numbers in
+    JSON data returned by WorldCat APIs are already normalized.
     """
     oclc_number = record.get("001").data
-    return "".join(d for d in oclc_number if d.isdigit())
+    return normalize_oclc_number(oclc_number)
 
 
 def get_unique_titles(
@@ -143,6 +146,18 @@ def normalize(input: str) -> str:
     """
     new_string = input.translate(str.maketrans("", "", string.whitespace))
     return strip_punctuation(new_string.upper())
+
+
+def normalize_oclc_number(input: str) -> str:
+    """Normalize OCLC number by stripping non-digits
+    and leading zeroes.
+    Examples:
+    * ocm00123456 -> 123456
+    * on98765 -> 98765
+    * 0123456789 -> 123456789
+    """
+    digits = "".join(d for d in input if d.isdigit())
+    return digits.lstrip("0")
 
 
 def title_is_close_enough(record: Record, titles: set) -> bool:

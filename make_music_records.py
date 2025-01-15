@@ -16,6 +16,7 @@ from data_evaluator import (
 )
 from create_marc_record import (
     add_local_fields,
+    add_worldcat_fields,
     create_discogs_record,
     create_musicbrainz_record,
     write_marc_record,
@@ -145,7 +146,7 @@ def main() -> None:
                 )
             for problem in marc_problems:
                 logger.info(f"\t\tREVIEW: {problem}")
-            marc_record = worldcat_record
+            marc_record = add_worldcat_fields(worldcat_record)
             marc_filename = worldcat_record_filename
         elif discogs_records:
             marc_record = create_discogs_record(data=discogs_records[0])
